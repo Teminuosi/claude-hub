@@ -856,6 +856,42 @@ body.zen .main { margin-left:0; }
 .agtbl td { padding:8px 4px; border-top:1px solid var(--line); color:var(--tx2); }
 .agtbl td:first-child { color:var(--tx); }
 .agempty { color:var(--tx3); font-size:12px; padding:6px 0; }
+/* MCP 页 */
+#mcpMain { flex:1; min-width:0; padding:18px 22px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+#mcpSide { width:400px; flex-shrink:0; border-left:1px solid var(--line); background:var(--bg0); padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+.mctop { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.mctop h2 { margin:0; font-size:17px; }
+.mctop select { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:5px 8px; font:inherit; font-size:12px; }
+.mcchips { display:flex; gap:6px; flex-wrap:wrap; }
+.mcchip { padding:4px 11px; border-radius:99px; border:1px solid var(--line); background:var(--panel); font-size:12px; cursor:pointer; color:var(--tx2); }
+.mcchip.on { border-color:color-mix(in srgb, var(--acc) 55%, transparent); color:var(--acc); background:color-mix(in srgb, var(--acc) 8%, transparent); }
+.mctbl { width:100%; border-collapse:collapse; font-size:12.5px; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.mctbl th { text-align:left; font-weight:600; color:var(--tx3); font-size:11.5px; padding:9px 12px; border-bottom:1px solid var(--line); }
+.mctbl td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.mctbl tr:last-child td { border-bottom:none; }
+.mctbl tbody tr { cursor:pointer; }
+.mctbl tbody tr:hover td { background:var(--card); }
+.mctbl tr.sel td { background:color-mix(in srgb, var(--acc) 8%, transparent); }
+.mctbl .tgt { font-family:'Cascadia Mono',Consolas,monospace; font-size:11.5px; color:var(--tx2); max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mcbadge { display:inline-block; padding:1px 8px; border-radius:99px; font-size:11px; border:1px solid var(--line2); color:var(--tx2); white-space:nowrap; }
+.mcst { display:inline-flex; align-items:center; gap:5px; font-size:12px; white-space:nowrap; }
+.mcst i { width:7px; height:7px; border-radius:99px; background:var(--tx3); }
+.mcst.ok i { background:#2e9e6a; } .mcst.ok { color:#2e9e6a; }
+.mcst.fail i { background:#d9534f; } .mcst.fail { color:#d9534f; }
+.mcst.pending i, .mcst.auth i { background:#e0a83a; } .mcst.pending, .mcst.auth { color:#c08a1e; }
+.mcst.wait { color:var(--tx3); }
+.mcdl { display:grid; grid-template-columns:76px 1fr; gap:7px 10px; font-size:12px; }
+.mcdl dt { color:var(--tx3); }
+.mcdl dd { margin:0; word-break:break-all; font-family:'Cascadia Mono',Consolas,monospace; font-size:11.5px; }
+.mcseg { display:flex; gap:0; border:1px solid var(--line); border-radius:6px; overflow:hidden; width:fit-content; }
+.mcseg button { border:none; background:var(--bg1); color:var(--tx2); padding:5px 12px; font:inherit; font-size:12px; }
+.mcseg button.on { background:color-mix(in srgb, var(--acc) 14%, var(--bg1)); color:var(--acc); font-weight:600; }
+#mcpSide > * { flex-shrink:0; }
+#mcpSide .agf textarea { min-height:70px; flex:none; }
+#mcpSide .agf select { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:6px 8px; font:inherit; font-size:12px; }
+.mcpre { font-family:'Cascadia Mono',Consolas,monospace; font-size:11px; background:var(--bg1); border:1px solid var(--line); border-radius:6px; padding:8px 10px; word-break:break-all; color:var(--tx2); line-height:1.5; }
+.mcres { font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-all; }
+.mcimp label { display:flex; gap:8px; align-items:flex-start; padding:6px 4px; font-size:12px; }
 /* 检查点页 */
 #ckSessCol { width:250px; flex-shrink:0; background:var(--bg0); border-right:1px solid var(--line); padding:14px 10px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
 #ckSessCol select { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:6px 8px; font:inherit; font-size:12px; margin:0 2px 8px; }
@@ -991,13 +1027,6 @@ body.zen .main { margin-left:0; }
   </div>
 </div>
 
-<div class="bigbox" id="mcpbox">
-  <div class="panel" style="height:min(520px,80vh);width:min(760px,90vw)">
-    <div class="bhead"><b>MCP 服务器</b><span class="tmsg">来自 ~/.claude.json 与项目 .mcp.json(只读)</span>
-      <span class="close" onclick="document.getElementById('mcpbox').classList.remove('open')" id="mcpClose"></span></div>
-    <div class="bbody" id="mcpBody"></div>
-  </div>
-</div>
 <div class="viewer" id="formbox">
   <div class="box" style="width:480px;">
     <div class="head"><b id="fmTitle"></b><span class="close" onclick="formCancel()" id="fmClose"></span></div>
@@ -1014,7 +1043,12 @@ body.zen .main { margin-left:0; }
   <button class="navi on" data-page="sess" onclick="setPage('sess')" title="会话:项目、会话和内嵌终端"></button>
   <button class="navi" data-page="agents" onclick="setPage('agents')" title="Agents:存好的提示词 + 模型 + 工具,一键在项目里跑"></button>
   <button class="navi" data-page="ckpt" onclick="setPage('ckpt')" title="检查点:Claude Code 每条提问前自动留的文件快照,能看改动、回退、撤销"></button>
+  <button class="navi" data-page="mcp" onclick="setPage('mcp')" title="MCP 服务器:看连没连上,加、删、从 Claude Desktop 导入"></button>
 </nav>
+<div class="fpage" id="pageMcp">
+  <section id="mcpMain"></section>
+  <aside id="mcpSide"></aside>
+</div>
 <div class="fpage" id="pageCkpt">
   <aside id="ckSessCol"></aside>
   <section id="ckListCol"></section>
@@ -1232,7 +1266,8 @@ const I = {
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
   bot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/>',
-  branch: '<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 7.2v9.6"/><path d="M18 11.2c0 3.5-4 4.3-10.5 6.2"/>'
+  branch: '<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 7.2v9.6"/><path d="M18 11.2c0 3.5-4 4.3-10.5 6.2"/>',
+  plug: '<path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/>'
 };
 // Claude 官方星芒(claude.ai 的 favicon 同款,取自官方品牌资源)。
 // 它是填充图形,和上面那套 fill:none + stroke 的线性图标不是一路,所以单独放、单独渲染。
@@ -1254,7 +1289,7 @@ document.getElementById('aclose').innerHTML = ico('x');
 document.getElementById('clclose').innerHTML = ico('x');
 document.getElementById('acctpill').insertAdjacentHTML('afterbegin', ico('user', 'sm'));
 document.getElementById('gclose').innerHTML = ico('x');
-['srchClose', 'gitClose', 'pmtClose', 'mcpClose', 'impClose'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ico('x'); });
+['srchClose', 'gitClose', 'pmtClose', 'impClose'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ico('x'); });
 document.getElementById('srchbtn').innerHTML = ico('search');
 document.getElementById('phonebtn').innerHTML = ico('maxsq');
 const phc = document.getElementById('phClose'); if (phc) phc.innerHTML = ico('x');
@@ -1792,13 +1827,10 @@ async function delPrompt(i) {
 }
 
 // ===== MCP 列表 =====
-async function openMcp() {
-  const list = await hub.mcpList(curPath || '');
-  document.getElementById('mcpBody').innerHTML = list.length
-    ? list.map(m => `<div class="pmt-row"><span class="t"><b>${esc(m.name)}</b> <span class="badge">${esc(m.scope)}</span> <span style="color:var(--tx3)">${esc(m.type)} · ${esc(m.target)}</span></span></div>`).join('')
-      + '<div style="color:var(--tx3);font-size:11px;padding:10px 4px;">增删改请用 CLI:<code>claude mcp add/remove</code>(这里只展示,避免误改配置)</div>'
-    : '<div style="color:var(--tx3);font-size:12px;padding:14px;">没有配置 MCP 服务器。用 <code>claude mcp add</code> 添加后这里会显示。</div>';
-  document.getElementById('mcpbox').classList.add('open');
+// 原来是只读弹窗,现在并进左边功能栏的 MCP 页(增删、状态、导入都在那里)。这里只负责跳过去并选好项目。
+function openMcp(projPath) {
+  if (projPath) { mcProj = projPath; mcStatus = null; }
+  setPage('mcp');
 }
 
 // ===== 专注模式 =====
@@ -2308,7 +2340,7 @@ function projMoreMenu(path, ev) {
     { act: 'gemini', icon: 'terminal', label: '用 gemini 打开', run: () => openTerm(p.path, p.short, '', p.short + ' · gemini', 'gemini') },
     { sep: true },
     { act: 'git', icon: 'search', label: '查看 Git 改动', run: () => openGit(p.path, p.short) },
-    { act: 'mcp', icon: 'gear', label: 'MCP 服务器', run: () => openMcp() }
+    { act: 'mcp', icon: 'plug', label: 'MCP 服务器', run: () => openMcp(p.path) }
   ]);
 }
 function heroHtml(p) {
@@ -3209,8 +3241,10 @@ function setPage(pg) {
   document.querySelectorAll('#navRail .navi').forEach(b => b.classList.toggle('on', b.dataset.page === pg));
   document.getElementById('pageAgents').classList.toggle('on', pg === 'agents');
   document.getElementById('pageCkpt').classList.toggle('on', pg === 'ckpt');
+  document.getElementById('pageMcp').classList.toggle('on', pg === 'mcp');
   if (pg === 'agents') agOpen();
   if (pg === 'ckpt') ckOpen();
+  if (pg === 'mcp') mcOpen();
   if (pg === 'sess') {
     // 回到会话页:终端可能在功能页盖着的时候换过尺寸,重新量一下
     const t = termTabs.find(x => x.id === activeTerm);
@@ -3219,7 +3253,7 @@ function setPage(pg) {
 }
 (() => {
   const nav = document.querySelectorAll('#navRail .navi');
-  const def = { sess: ['terminal', '会话'], agents: ['bot', 'Agents'], ckpt: ['branch', '检查点'] };
+  const def = { sess: ['terminal', '会话'], agents: ['bot', 'Agents'], ckpt: ['branch', '检查点'], mcp: ['plug', 'MCP'] };
   nav.forEach(b => { const d = def[b.dataset.page]; if (d) b.innerHTML = ico(d[0]) + '<span>' + d[1] + '</span>'; });
 })();
 
@@ -3386,6 +3420,228 @@ async function agRun() {
   const tab = termTabs.find(t => !before.has(t.id));
   if (tab) { tab.agentId = a.id; renderTermTabs(); }
   agLoad();             // 运行记录在主进程里记过了,后台刷一下,回到这页时就是新的
+}
+
+// ===== MCP 页 =====
+// 列表直接读配置文件(~/.claude.json 和项目的 .mcp.json,lib/mcp.js),马上就有;
+// 「连得上吗」跑官方 claude mcp list,要挨个连一遍,慢,单独异步填进来,超时/看不懂就是「未检测」。
+// 加、删都走官方 claude mcp add-json / remove —— ClaudeHub 不自己改这些文件。env / 请求头的值不进界面,只显示名字。
+const MC_SCOPE = {
+  local: ['仅本项目', '只在这台电脑的这个项目里生效,记在 ~/.claude.json'],
+  project: ['项目共享', '写进项目的 .mcp.json,跟着仓库给所有人用(别把密钥写进去)'],
+  user: ['全局', '这台电脑上所有项目都能用,记在 ~/.claude.json'],
+  connector: ['claude.ai 连接器', '在 claude.ai 网页的设置里管理,这里只看状态']
+};
+const MC_ST = { ok: '已连接', fail: '连接失败', pending: '待批准', auth: '要登录', disabled: '已停用', unknown: '未检测' };
+let mcProj = null, mcCfg = null, mcStatus = null, mcStatusSeq = 0, mcFilter = 'all', mcSel = null, mcSide = 'detail', mcRows = [];
+let mcForm = { name: '', scope: 'local', type: 'stdio', command: '', args: '', env: '', url: '', headers: '', json: '' }, mcAddMode = 'form';
+let mcBusy = false, mcRes = '', mcDelArm = 0, mcDesk = null, mcDeskSel = new Set(), mcDeskScope = 'user';
+const mcPj = () => projects.find(p => p.path === mcProj);
+async function mcOpen() {
+  if (!mcProj || !mcPj()) { mcProj = curPath || (projects[0] && projects[0].path) || null; mcStatus = null; }
+  await mcLoad();
+  if (!mcStatus) mcCheck();
+}
+async function mcLoad() {
+  try { mcCfg = await hub.mcpConfig(mcProj || ''); } catch (e) { mcCfg = { ok: false, msg: String(e) }; }
+  mcRender();
+}
+async function mcCheck() {
+  const seq = ++mcStatusSeq, proj = mcProj;
+  mcStatus = 'loading'; mcRender();
+  let r = null;
+  try { r = await hub.mcpStatus(proj || ''); } catch (e) { r = { ok: false, msg: String(e) }; }
+  if (seq !== mcStatusSeq || proj !== mcProj) return;          // 期间换了项目 / 又点了一次:这次的结果作废
+  mcStatus = r && r.ok ? r : { list: [], failed: (r && r.msg) || '检测失败' };
+  mcRender();
+}
+function mcPickProj(v) { mcProj = v; mcSel = null; mcStatus = null; mcLoad().then(mcCheck); }
+// 表格的一行:配置里的服务器 + 只在 claude mcp list 里出现的(claude.ai 连接器)
+function mcBuildRows() {
+  const st = mcStatus && mcStatus.list ? mcStatus.list : [];
+  const rows = ((mcCfg && mcCfg.servers) || []).map(s => {
+    const hit = st.find(x => x.name === s.name);
+    let status = hit ? hit.status : (mcStatus === 'loading' ? 'wait' : 'unknown');
+    if (!hit && s.scope === 'project' && s.approval === 'pending') status = 'pending';
+    if (!hit && s.scope === 'project' && s.approval === 'rejected') status = 'disabled';
+    return Object.assign({}, s, { status, statusText: hit ? hit.text : '' });
+  });
+  for (const x of st) if (!rows.some(r => r.name === x.name)) rows.push({ name: x.name, scope: 'connector', type: /^https?:/.test(x.target) ? 'http' : '', url: x.target, command: '', args: [], envKeys: [], headerKeys: [], status: x.status, statusText: x.text });
+  return rows;
+}
+const mcTarget = (s) => s.url || [s.command, ...(s.args || [])].filter(Boolean).join(' ');
+function mcStHtml(s) {
+  if (s.status === 'wait') return '<span class="mcst wait">检测中…</span>';
+  return `<span class="mcst ${s.status}" title="${escAttr(s.statusText || '')}"><i></i>${esc(MC_ST[s.status] || s.statusText || '未检测')}</span>`;
+}
+function mcRender() {
+  const main = document.getElementById('mcpMain');
+  if (!main) return;
+  const pj = mcPj();
+  mcRows = mcBuildRows();
+  const count = (k) => mcRows.filter(r => r.scope === k).length;
+  const chips = [['all', '全部', mcRows.length], ['local', '仅本项目', count('local')], ['project', '项目共享', count('project')], ['user', '全局', count('user')], ['connector', '连接器', count('connector')]]
+    .filter(([k, , n]) => k === 'all' || n)
+    .map(([k, t, n]) => `<span class="mcchip${mcFilter === k ? ' on' : ''}" onclick="mcFilter='${k}';mcRender()">${t} ${n}</span>`).join('');
+  const shown = mcRows.map((r, i) => [r, i]).filter(([r]) => mcFilter === 'all' || r.scope === mcFilter);
+  const broken = mcCfg && mcCfg.broken ? Object.entries(mcCfg.broken).map(([k, v]) => `<div class="agwarn">${k === 'claudeJson' ? '~/.claude.json' : '项目的 .mcp.json'} 读不了:${esc(v)}<br>这里不会去改它;请先用编辑器修好(Claude Code 自己也会读不了)。</div>`).join('') : '';
+  const stMsg = mcStatus === 'loading' ? '正在用 claude mcp list 挨个连一遍,服务器多时要几十秒…'
+    : (mcStatus && mcStatus.failed ? '没能检测连接状态:' + mcStatus.failed : (mcStatus && mcStatus.timedOut ? '检测超时,没回来的显示「未检测」' : ''));
+  const opts = orderedProjects().map(p => `<option value="${escAttr(p.path)}"${p.path === mcProj ? ' selected' : ''}>${esc(p.short || p.path)}</option>`).join('');
+  main.innerHTML = `
+    <div class="mctop">
+      <div style="flex:1;min-width:240px"><h2>MCP 服务器</h2>
+        <div class="tmsg" style="margin-top:4px">给 Claude Code 接上外部工具(数据库、浏览器、GitHub…)。增删都通过官方 <code>claude mcp</code> 命令完成。</div></div>
+      <label class="tmsg" style="display:flex;align-items:center;gap:6px">项目<select onchange="mcPickProj(this.value)">${opts || '<option value="">(还没有项目)</option>'}</select></label>
+      <button class="btn ghost sm" onclick="mcCheck()" ${mcStatus === 'loading' ? 'disabled' : ''}>${mcStatus === 'loading' ? '检测中…' : '重新检测连接'}</button>
+      <button class="btn ghost sm" onclick="mcShow('import')">从 Claude Desktop 导入</button>
+      <button class="btn sm" onclick="mcShow('add')">${ico('plus', 'sm')}添加服务器</button>
+    </div>
+    ${broken}
+    <div class="mcchips">${chips}</div>
+    ${mcRows.length ? `<table class="mctbl"><thead><tr><th>名称</th><th>类型</th><th>范围</th><th>命令 / 地址</th><th>状态</th></tr></thead><tbody>
+      ${shown.map(([r, i]) => `<tr class="${mcSel === i && mcSide === 'detail' ? 'sel' : ''}" onclick="mcPick(${i})">
+        <td><b>${esc(r.name)}</b></td><td>${esc(r.type || '')}</td>
+        <td><span class="mcbadge" title="${escAttr((MC_SCOPE[r.scope] || [])[1] || '')}">${esc((MC_SCOPE[r.scope] || [r.scope])[0])}</span></td>
+        <td><div class="tgt" title="${escAttr(mcTarget(r))}">${esc(mcTarget(r))}</div></td><td>${mcStHtml(r)}</td></tr>`).join('')}
+      </tbody></table>` : `<div class="agcard" style="max-width:620px"><b>还没有 MCP 服务器</b>
+        <div class="tmsg" style="line-height:1.8">MCP 让 Claude Code 能用外部工具。点右上角「添加服务器」,或从 Claude Desktop 导入已经配好的。<br>
+        常见的:<code>npx -y @modelcontextprotocol/server-filesystem 某个目录</code>、<code>npx @playwright/mcp@latest</code>(浏览器)。</div></div>`}
+    <div class="tmsg">${esc(stMsg)}</div>
+    <div class="agnote" style="margin-top:0">「项目共享」的服务器(.mcp.json)要你在 Claude Code 里批准一次才会连 —— 在这个项目里开会话时它会问。改完配置后,已经开着的会话要重开才生效。</div>`;
+  mcRenderSide();
+}
+function mcPick(i) { mcSel = i; mcSide = 'detail'; mcDelArm = 0; mcRes = ''; mcRender(); }
+function mcShow(which) {
+  mcSide = which; mcRes = ''; mcSel = null;
+  if (which === 'add' && !mcPj() && mcForm.scope !== 'user') mcForm.scope = 'user';
+  if (which === 'import') { mcDesk = null; mcDeskSel = new Set(); hub.mcpDesktop().then(r => { mcDesk = r || { ok: false, msg: '读不到' }; mcRenderSide(); }).catch(e => { mcDesk = { ok: false, msg: String(e) }; mcRenderSide(); }); }
+  mcRender();
+}
+function mcScopeOpts(cur) {
+  const pj = mcPj();
+  return ['local', 'project', 'user'].map(k => {
+    const dis = k !== 'user' && !pj;
+    return `<option value="${k}"${k === cur ? ' selected' : ''}${dis ? ' disabled' : ''}>${MC_SCOPE[k][0]}${k !== 'user' && pj ? '(' + esc(pj.short || '') + ')' : ''}</option>`;
+  }).join('');
+}
+function mcRenderSide() {
+  const el = document.getElementById('mcpSide');
+  if (!el) return;
+  const res = mcRes ? `<div class="agcard"><div class="mcres">${mcRes}</div></div>` : '';
+  if (mcSide === 'add') {
+    const f = mcForm;
+    const form = mcAddMode === 'json'
+      ? `<label class="agf">名称(粘的是单个服务器的配置时才要填)<input type="text" value="${escAttr(f.name)}" oninput="mcForm.name=this.value"></label>
+         <label class="agf">粘贴 JSON<textarea spellcheck="false" style="min-height:200px" oninput="mcForm.json=this.value" placeholder='{ "mcpServers": { "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] } } }'>${esc(f.json)}</textarea>
+           <span class="hint">从 README 里复制来的 { "mcpServers": {…} } 整段直接粘;里面有几个就加几个。</span></label>`
+      : `<label class="agf">名称<input type="text" maxlength="64" value="${escAttr(f.name)}" placeholder="例如 playwright" oninput="mcForm.name=this.value"><span class="hint">字母、数字、- _ .</span></label>
+         <div class="agf">类型<div class="mcseg">${['stdio', 'http', 'sse'].map(t => `<button class="${f.type === t ? 'on' : ''}" onclick="mcForm.type='${t}';mcRenderSide()">${t}</button>`).join('')}</div>
+           <span class="hint">${f.type === 'stdio' ? '本机起一个程序(多数 MCP 是这种,npx / uvx / node 启动)' : '连一个网址上的服务'}</span></div>
+         ${f.type === 'stdio' ? `
+           <label class="agf">命令<input type="text" value="${escAttr(f.command)}" placeholder="npx" oninput="mcForm.command=this.value"></label>
+           <label class="agf">参数(每行一个)<textarea spellcheck="false" oninput="mcForm.args=this.value" placeholder="-y&#10;@modelcontextprotocol/server-filesystem&#10;D:\\docs">${esc(f.args)}</textarea><span class="hint">带空格的路径也照常写一行,不用加引号。</span></label>
+           <label class="agf">环境变量(每行 名字=值)<textarea spellcheck="false" oninput="mcForm.env=this.value" placeholder="GITHUB_TOKEN=ghp_xxx">${esc(f.env)}</textarea></label>`
+         : `
+           <label class="agf">地址<input type="text" value="${escAttr(f.url)}" placeholder="https://example.com/mcp" oninput="mcForm.url=this.value"></label>
+           <label class="agf">请求头(每行 名字: 值)<textarea spellcheck="false" oninput="mcForm.headers=this.value" placeholder="Authorization: Bearer xxx">${esc(f.headers)}</textarea></label>`}`;
+    el.innerHTML = `<div class="aghead"><b>添加 MCP 服务器</b><button class="btn ghost sm" onclick="mcShow('detail')">关闭</button></div>
+      <div class="mcseg"><button class="${mcAddMode === 'form' ? 'on' : ''}" onclick="mcAddMode='form';mcRenderSide()">填表</button><button class="${mcAddMode === 'json' ? 'on' : ''}" onclick="mcAddMode='json';mcRenderSide()">粘贴 JSON</button></div>
+      ${form}
+      <label class="agf">范围<select onchange="mcForm.scope=this.value;mcRenderSide()">${mcScopeOpts(f.scope)}</select><span class="hint">${esc(MC_SCOPE[f.scope][1])}</span></label>
+      <div class="tmsg">将执行:</div>
+      <div class="mcpre">claude mcp add-json -s ${esc(f.scope)} ${esc((mcAddMode === 'form' ? f.name : (f.name || '<JSON 里的名字>')) || '<名称>')} '&lt;配置 JSON&gt;'</div>
+      <div class="ckacts"><button class="btn sm" onclick="mcAdd()" ${mcBusy ? 'disabled' : ''}>${mcBusy ? '添加中…' : '添加'}</button></div>
+      ${res}`;
+    return;
+  }
+  if (mcSide === 'import') {
+    const have = new Set(((mcCfg && mcCfg.servers) || []).map(s => s.name));
+    let body;
+    if (!mcDesk) body = '<div class="agempty">读取中…</div>';
+    else if (!mcDesk.ok) body = `<div class="agwarn">Claude Desktop 的配置读不了:${esc(mcDesk.msg || '')}</div>`;
+    else if (!mcDesk.servers.length) body = '<div class="agempty">没找到 Claude Desktop 的 MCP 配置(%APPDATA%\\Claude\\claude_desktop_config.json)。没装 Claude Desktop,或者它里面没配 MCP。</div>';
+    else body = `<div class="mcimp">${mcDesk.servers.map((s, i) => {
+      const dup = have.has(s.name);
+      return `<label><input type="checkbox" ${dup ? 'disabled' : ''} ${mcDeskSel.has(s.name) ? 'checked' : ''} onchange="this.checked?mcDeskSel.add(mcDesk.servers[${i}].name):mcDeskSel.delete(mcDesk.servers[${i}].name)">
+        <span><b>${esc(s.name)}</b>${dup ? ' <span class="tmsg">(已有同名,跳过)</span>' : ''}<br><span class="tmsg" style="word-break:break-all">${esc(mcTarget(s))}${s.envKeys.length ? ' · 环境变量 ' + esc(s.envKeys.join(', ')) : ''}</span></span></label>`;
+    }).join('')}</div>
+      <label class="agf">导入到<select onchange="mcDeskScope=this.value">${mcScopeOpts(mcDeskScope)}</select></label>
+      <div class="ckacts"><button class="btn sm" onclick="mcImport()" ${mcBusy ? 'disabled' : ''}>${mcBusy ? '导入中…' : '导入选中的'}</button></div>`;
+    el.innerHTML = `<div class="aghead"><b>从 Claude Desktop 导入</b><button class="btn ghost sm" onclick="mcShow('detail')">关闭</button></div>
+      <div class="tmsg" style="line-height:1.7">读 Claude Desktop 的配置,选中的逐个用 claude mcp add-json 加进来(环境变量一起带上)。Claude Desktop 那边不动。</div>
+      ${body}${res}`;
+    return;
+  }
+  const s = mcSel !== null ? mcRows[mcSel] : null;
+  if (!s) {
+    el.innerHTML = `<div class="aghead"><b>详情</b></div><div class="agempty">点左边一行看详情。</div>${res}`;
+    return;
+  }
+  const where = s.scope === 'project' ? (mcCfg && mcCfg.mcpJsonPath) : (s.scope === 'connector' ? 'claude.ai 网页设置' : '~/.claude.json');
+  el.innerHTML = `<div class="aghead"><b>${esc(s.name)}</b>${mcStHtml(s)}</div>
+    <dl class="mcdl">
+      <dt>范围</dt><dd>${esc((MC_SCOPE[s.scope] || [s.scope])[0])} · ${esc((MC_SCOPE[s.scope] || ['', ''])[1])}</dd>
+      <dt>类型</dt><dd>${esc(s.type || '—')}</dd>
+      ${s.url ? `<dt>地址</dt><dd>${esc(s.url)}</dd>` : ''}
+      ${s.command ? `<dt>命令</dt><dd>${esc(s.command)}</dd>` : ''}
+      ${s.args && s.args.length ? `<dt>参数</dt><dd>${s.args.map(a => esc(a)).join('<br>')}</dd>` : ''}
+      ${s.envKeys.length ? `<dt>环境变量</dt><dd>${esc(s.envKeys.join(', '))}<br><span class="tmsg">(值不显示)</span></dd>` : ''}
+      ${s.headerKeys.length ? `<dt>请求头</dt><dd>${esc(s.headerKeys.join(', '))}<br><span class="tmsg">(值不显示)</span></dd>` : ''}
+      <dt>记在</dt><dd>${esc(where || '')}</dd>
+      ${s.statusText ? `<dt>检测结果</dt><dd>${esc(s.statusText)}</dd>` : ''}
+    </dl>
+    ${s.status === 'pending' ? '<div class="tmsg" style="line-height:1.7">这是项目 .mcp.json 里的服务器,还没批准。在这个项目里开一个会话,Claude Code 启动时会问你要不要启用。</div>' : ''}
+    ${s.status === 'auth' ? '<div class="tmsg" style="line-height:1.7">这个服务器要登录。在会话里输入 /mcp,选它完成登录。</div>' : ''}
+    ${s.status === 'fail' ? '<div class="tmsg" style="line-height:1.7">连不上:常见原因是命令没装(比如没有 node / uvx)、参数里的路径不对、密钥失效。可以在终端里直接运行上面的命令看报错。</div>' : ''}
+    ${s.scope === 'connector' ? '' : `<div class="ckacts"><button class="btn ghost sm danger" id="mcDelBtn" onclick="mcRemove()" ${mcBusy ? 'disabled' : ''}>移除</button>
+      <span class="tmsg">将执行 claude mcp remove -s ${esc(s.scope)} ${esc(s.name)}</span></div>`}
+    ${res}`;
+}
+const mcResHtml = (r) => (r.results || []).map(x => `${x.ok ? '✓' : '✗'} <b>${esc(x.name || '')}</b>  ${esc((x.msg || '').trim())}`).join('\n') || esc(r.msg || '');
+async function mcAdd() {
+  if (mcBusy) return;
+  mcBusy = true; mcRes = ''; mcRenderSide();
+  const req = { mode: mcAddMode, scope: mcForm.scope, name: mcForm.name.trim(), json: mcForm.json, projPath: mcProj || '',
+    form: { type: mcForm.type, command: mcForm.command, args: mcForm.args, env: mcForm.env, url: mcForm.url, headers: mcForm.headers } };
+  let r = null;
+  try { r = await hub.mcpAdd(req); } catch (e) { r = { ok: false, msg: String(e) }; }
+  mcBusy = false;
+  mcRes = mcResHtml(r);
+  if (r && r.ok) {
+    hubToast('已添加');
+    mcForm = { name: '', scope: mcForm.scope, type: mcForm.type, command: '', args: '', env: '', url: '', headers: '', json: '' };
+  }
+  await mcLoad();
+  if (r && r.results && r.results.some(x => x.ok)) mcCheck();
+}
+async function mcRemove() {
+  const s = mcSel !== null ? mcRows[mcSel] : null;
+  if (!s || mcBusy || s.scope === 'connector') return;
+  if (Date.now() - mcDelArm > 3000) {
+    mcDelArm = Date.now();
+    const b = document.getElementById('mcDelBtn'); if (b) b.textContent = '再点一次确认移除';
+    setTimeout(() => { const b2 = document.getElementById('mcDelBtn'); if (b2 && Date.now() - mcDelArm >= 3000) b2.textContent = '移除'; }, 3100);
+    return;
+  }
+  mcDelArm = 0; mcBusy = true; mcRenderSide();
+  let r = null;
+  try { r = await hub.mcpRemove(s.name, s.scope, mcProj || ''); } catch (e) { r = { ok: false, msg: String(e) }; }
+  mcBusy = false;
+  if (r && r.ok) { hubToast('已移除 ' + s.name); mcSel = null; mcRes = ''; }
+  else mcRes = '✗ 没能移除:' + esc((r && r.msg) || '');
+  await mcLoad();
+}
+async function mcImport() {
+  if (mcBusy || !mcDeskSel.size) { if (!mcDeskSel.size) hubToast('先勾选要导入的'); return; }
+  mcBusy = true; mcRes = ''; mcRenderSide();
+  let r = null;
+  try { r = await hub.mcpImportDesktop([...mcDeskSel], mcDeskScope, mcProj || ''); } catch (e) { r = { ok: false, msg: String(e) }; }
+  mcBusy = false;
+  mcRes = mcResHtml(r);
+  mcDeskSel = new Set();
+  await mcLoad();
+  if (r && r.results && r.results.some(x => x.ok)) mcCheck();
 }
 
 // ===== 检查点页 =====
@@ -5068,7 +5324,7 @@ if (hub.onAgentTask) hub.onAgentTask(task => {
       if (document.getElementById('docbox').classList.contains('open')) { closeDoc(); return; }
       if (document.getElementById('searchbox').classList.contains('open')) { closeSearch(); return; }
       if (document.getElementById('editbox').classList.contains('open')) { closeEdit(); return; }
-      ['gitbox', 'pmtbox', 'mcpbox'].forEach(id => document.getElementById(id).classList.remove('open'));
+      ['gitbox', 'pmtbox'].forEach(id => document.getElementById(id).classList.remove('open'));
       if (zen) { toggleZen(); return; }
     }
     if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); openSearch(); return; }

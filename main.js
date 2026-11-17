@@ -15,6 +15,7 @@ const discover = require('./lib/discover');
 const agentApi = require('./lib/agent-api');
 const agents = require('./lib/agents');
 const ckpt = require('./lib/checkpoints');
+const mcp = require('./lib/mcp');
 const claudeCli = require('./lib/claude-cli');
 const sysProxy = require('./lib/sysproxy').create();
 const { writeJsonAtomic } = require('./lib/atomic-json');
@@ -399,6 +400,59 @@ ipcMain.handle('hub:savePrompts', (e, l) => data.savePrompts(l));
 // 自定义 Agent(和上面 agent:* 的小九 API 是两回事)。数据只在 APP_DATA,不碰 ~/.claude。
 ipcMain.handle('agents:list', () => agents.load(P.AGENTS));
 ipcMain.handle('agents:save', async (e, list) => { try { return await agents.save(P.AGENTS, list); } catch (err) { return { ok: false, msg: String(err) }; } });
+// MCP 页:读配置文件给界面看;增删一律走官方 claude mcp add-json / remove(lib/mcp.js)。env/headers 的值不出主进程
+const mcpCwd = (p) => (typeof p === 'string' && path.isAbsolute(p)) ? p : undefined;
+async function mcpRun(args, projPath, timeout) {
+  const { env } = await termEnv();
+  return mcp.runClaude(args, { cwd: mcpCwd(projPath), env: claudeCli.withClaudeOnPath(env), runDir: P.MCP_RUNS, timeout });
+}
+ipcMain.handle('mcp:config', async (e, projPath) => {
+  try { return Object.assign({ ok: true }, await mcp.readConfig(P.CLAUDE_JSON, mcpCwd(projPath))); }
+  catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
+});
+ipcMain.handle('mcp:status', async (e, projPath) => {
+  try {
+    const r = await mcpRun(['mcp', 'list'], projPath, 90000);
+    return { ok: true, list: mcp.parseList(r.out), timedOut: r.timedOut, raw: r.ok ? '' : r.out.slice(-600) };
+  } catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
+});
+// items: [{ name, scope, form? | json? }] —— 一条条加,每条报结果
+ipcMain.handle('mcp:add', async (e, req) => {
+  const results = [];
+  try {
+    const scope = req && req.scope;
+    let items;
+    if (req && req.mode === 'json') items = mcp.parsePasted(req.json, req.name).map(x => ({ name: x.name, cfg: x.cfg }));
+    else items = [{ name: req && req.name, cfg: mcp.buildConfig((req && req.form) || {}) }];
+    for (const it of items) {
+      let args;
+      try { args = mcp.addArgs(it.name, scope, it.cfg); } catch (err) { results.push({ name: it.name, ok: false, msg: err.message }); continue; }
+      const r = await mcpRun(args, req.projPath, 60000);
+      results.push({ name: it.name, ok: r.ok, msg: r.out.slice(-400) });
+    }
+    return { ok: results.every(r => r.ok), results };
+  } catch (err) { return { ok: false, msg: String(err && err.message || err), results }; }
+});
+ipcMain.handle('mcp:remove', async (e, name, scope, projPath) => {
+  try { const r = await mcpRun(mcp.removeArgs(name, scope), projPath, 60000); return { ok: r.ok, msg: r.out.slice(-400) }; }
+  catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
+});
+ipcMain.handle('mcp:desktop', async () => {
+  const r = await mcp.readDesktop(P.CLAUDE_DESKTOP_CFG);
+  return r.ok ? { ok: true, servers: r.servers.map(s => s.sum) } : r;
+});
+ipcMain.handle('mcp:importDesktop', async (e, names, scope, projPath) => {
+  const r = await mcp.readDesktop(P.CLAUDE_DESKTOP_CFG);
+  if (!r.ok) return r;
+  const results = [];
+  for (const s of r.servers.filter(x => Array.isArray(names) && names.includes(x.name))) {
+    let args;
+    try { args = mcp.addArgs(s.name, scope, s.cfg); } catch (err) { results.push({ name: s.name, ok: false, msg: err.message }); continue; }
+    const x = await mcpRun(args, projPath, 60000);
+    results.push({ name: s.name, ok: x.ok, msg: x.out.slice(-400) });
+  }
+  return { ok: results.every(x => x.ok), results };
+});
 // 检查点:读 Claude Code 自己的文件检查点(只读);回退走官方 claude --rewind-files,回退前先备份,能撤销
 ipcMain.handle('ckpt:list', async (e, slug, sid) => {
   try { return Object.assign({ ok: true }, await ckpt.list(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid)); }
