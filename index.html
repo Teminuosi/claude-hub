@@ -856,6 +856,38 @@ body.zen .main { margin-left:0; }
 .agtbl td { padding:8px 4px; border-top:1px solid var(--line); color:var(--tx2); }
 .agtbl td:first-child { color:var(--tx); }
 .agempty { color:var(--tx3); font-size:12px; padding:6px 0; }
+/* 检查点页 */
+#ckSessCol { width:250px; flex-shrink:0; background:var(--bg0); border-right:1px solid var(--line); padding:14px 10px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+#ckSessCol select { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:6px 8px; font:inherit; font-size:12px; margin:0 2px 8px; }
+#ckListCol { width:340px; flex-shrink:0; border-right:1px solid var(--line); padding:14px 12px; overflow-y:auto; display:flex; flex-direction:column; }
+#ckMain { flex:1; min-width:0; padding:16px 20px; display:flex; flex-direction:column; gap:12px; overflow:hidden; }
+.cksess { padding:8px 11px; border-radius:7px; border:1px solid transparent; cursor:pointer; }
+.cksess:hover { background:var(--card); border-color:var(--line); }
+.cksess.sel { background:var(--sel, var(--card)); border-color:color-mix(in srgb, var(--acc) 35%, transparent); }
+.cksess .t { font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.cksess .t span { overflow:hidden; text-overflow:ellipsis; }
+.cksess .m { font-size:11px; color:var(--tx3); margin-top:2px; }
+.ckopen { flex:none; font-size:10px; color:var(--acc); font-weight:600; }
+.ckitem { display:flex; gap:10px; cursor:pointer; }
+.ckrail { display:flex; flex-direction:column; align-items:center; width:14px; flex-shrink:0; }
+.ckrail i { width:11px; height:11px; border-radius:99px; border:2px solid var(--tx3); background:var(--bg1); margin-top:4px; flex-shrink:0; }
+.ckrail b { flex:1; width:2px; background:var(--line2); margin:3px 0 -4px; }
+.ckitem.has .ckrail i { border-color:var(--acc); }
+.ckitem.sel .ckrail i { background:var(--acc); border-color:var(--acc); }
+.ckbody { flex:1; min-width:0; padding:2px 8px 14px; border-radius:7px; }
+.ckitem:hover .ckbody { background:var(--card); }
+.ckitem.sel .ckbody { background:color-mix(in srgb, var(--acc) 9%, transparent); }
+.ckbody .p { font-size:12.5px; line-height:1.5; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; word-break:break-all; }
+.ckbody .m { font-size:11px; color:var(--tx3); margin-top:3px; }
+.ckacts { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.ckfiles { display:flex; flex-wrap:wrap; gap:6px; }
+.ckf { display:flex; align-items:center; gap:6px; padding:4px 9px; border-radius:6px; border:1px solid var(--line); background:var(--panel); font-size:11.5px; cursor:pointer; max-width:100%; }
+.ckf.sel { border-color:color-mix(in srgb, var(--acc) 55%, transparent); }
+.ckf span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Cascadia Mono',Consolas,monospace; }
+.ckdiff { flex:1; min-height:120px; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+.ckbar { padding:10px 12px; border-radius:7px; font-size:12px; line-height:1.6; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ckbar.ok { border:1px solid color-mix(in srgb, var(--acc) 45%, transparent); background:color-mix(in srgb, var(--acc) 8%, transparent); }
+.ckbar.warn { border:1px solid color-mix(in srgb, #e0a83a 55%, transparent); background:color-mix(in srgb, #e0a83a 9%, transparent); }
 .agwarn { padding:10px 12px; border-radius:7px; border:1px solid color-mix(in srgb, var(--red) 45%, transparent); background:color-mix(in srgb, var(--red) 8%, transparent); color:var(--tx); font-size:12px; line-height:1.6; }
 </style>
 </head>
@@ -981,7 +1013,13 @@ body.zen .main { margin-left:0; }
 <nav id="navRail" aria-label="功能">
   <button class="navi on" data-page="sess" onclick="setPage('sess')" title="会话:项目、会话和内嵌终端"></button>
   <button class="navi" data-page="agents" onclick="setPage('agents')" title="Agents:存好的提示词 + 模型 + 工具,一键在项目里跑"></button>
+  <button class="navi" data-page="ckpt" onclick="setPage('ckpt')" title="检查点:Claude Code 每条提问前自动留的文件快照,能看改动、回退、撤销"></button>
 </nav>
+<div class="fpage" id="pageCkpt">
+  <aside id="ckSessCol"></aside>
+  <section id="ckListCol"></section>
+  <section id="ckMain"></section>
+</div>
 <div class="fpage" id="pageAgents">
   <aside id="agList"></aside>
   <section id="agMain"></section>
@@ -1193,7 +1231,8 @@ const I = {
   pen: '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
-  bot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/>'
+  bot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/>',
+  branch: '<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 7.2v9.6"/><path d="M18 11.2c0 3.5-4 4.3-10.5 6.2"/>'
 };
 // Claude 官方星芒(claude.ai 的 favicon 同款,取自官方品牌资源)。
 // 它是填充图形,和上面那套 fill:none + stroke 的线性图标不是一路,所以单独放、单独渲染。
@@ -3169,7 +3208,9 @@ function setPage(pg) {
   curPage = pg;
   document.querySelectorAll('#navRail .navi').forEach(b => b.classList.toggle('on', b.dataset.page === pg));
   document.getElementById('pageAgents').classList.toggle('on', pg === 'agents');
+  document.getElementById('pageCkpt').classList.toggle('on', pg === 'ckpt');
   if (pg === 'agents') agOpen();
+  if (pg === 'ckpt') ckOpen();
   if (pg === 'sess') {
     // 回到会话页:终端可能在功能页盖着的时候换过尺寸,重新量一下
     const t = termTabs.find(x => x.id === activeTerm);
@@ -3178,7 +3219,7 @@ function setPage(pg) {
 }
 (() => {
   const nav = document.querySelectorAll('#navRail .navi');
-  const def = { sess: ['terminal', '会话'], agents: ['bot', 'Agents'] };
+  const def = { sess: ['terminal', '会话'], agents: ['bot', 'Agents'], ckpt: ['branch', '检查点'] };
   nav.forEach(b => { const d = def[b.dataset.page]; if (d) b.innerHTML = ico(d[0]) + '<span>' + d[1] + '</span>'; });
 })();
 
@@ -3345,6 +3386,169 @@ async function agRun() {
   const tab = termTabs.find(t => !before.has(t.id));
   if (tab) { tab.agentId = a.id; renderTermTabs(); }
   agLoad();             // 运行记录在主进程里记过了,后台刷一下,回到这页时就是新的
+}
+
+// ===== 检查点页 =====
+// 数据是 Claude Code 自己的文件检查点(/rewind 用的那份):每条提问前自动留一份被改文件的样子。
+// 这页只读它;「回退」走官方 claude --rewind-files,回退前主进程先把文件现在的样子存一份,能撤销(lib/checkpoints.js)。
+// 原来的「Git 改动」窗口也从这里进:检查点管 Claude 改了什么,Git 管还没提交的全部改动。
+let ckProj = null, ckSessList = [], ckSid = null, ckItems = [], ckSel = null, ckFile = null, ckMsg = '', ckUndo = null, ckRewArm = 0, ckBusy = false;
+const ckPj = () => projects.find(p => p.path === ckProj);
+async function ckOpen() {
+  if (!ckProj || !ckPj()) {
+    const t = termTabs.find(x => x.id === activeTerm);
+    ckProj = (t && t.projPath) || curPath || (projects[0] && projects[0].path) || null;
+    if (t && t.sid && t.projPath === ckProj) ckSid = t.sid;
+  }
+  await ckLoadSessions();
+}
+async function ckLoadSessions() {
+  const pj = ckPj();
+  ckSessList = [];
+  if (pj) { try { ckSessList = await hub.sessions(pj.sessSlug, pj.mainSession, pj.path) || []; } catch {} }
+  if (!ckSessList.find(s => s.sid === ckSid)) ckSid = ckSessList[0] ? ckSessList[0].sid : null;
+  ckRenderSess();
+  await ckLoad();
+}
+async function ckLoad() {
+  const pj = ckPj();
+  ckItems = []; ckMsg = '';
+  if (pj && ckSid) {
+    let r = null;
+    try { r = await hub.ckptList(pj.sessSlug, ckSid); } catch (e) { r = { ok: false, msg: String(e) }; }
+    if (r && r.ok) ckItems = r.items || [];
+    else ckMsg = (r && r.msg) || '读不到这个会话的检查点';
+  }
+  if (!ckItems.find(i => i.id === ckSel)) ckSel = (ckItems.find(i => i.files.length) || ckItems[0] || {}).id || null;
+  ckFile = null; ckRewArm = 0;
+  ckRenderList(); ckRenderMain();
+}
+function ckRenderSess() {
+  const opts = orderedProjects().map(p => `<option value="${escAttr(p.path)}"${p.path === ckProj ? ' selected' : ''}>${esc(p.short || p.path)}</option>`).join('');
+  document.getElementById('ckSessCol').innerHTML = `
+    <div class="aghead"><b>检查点</b></div>
+    <select onchange="ckProj=this.value;ckSid=null;ckLoadSessions()" aria-label="项目">${opts || '<option>(还没有项目)</option>'}</select>
+    ${ckSessList.map(s => {
+      const open = termTabs.some(t => t.sid === s.sid);
+      return `<div class="cksess${s.sid === ckSid ? ' sel' : ''}" onclick="ckPickSess('${escAttr(s.sid)}')">
+        <div class="t"><span>${esc(s.title || s.sid.slice(0, 8))}</span>${open ? '<em class="ckopen">开着</em>' : ''}</div>
+        <div class="m">${esc(fmtAgTime(s.mtime))}</div></div>`;
+    }).join('') || '<div class="agempty" style="padding:6px 4px">这个项目还没有会话。</div>'}
+    <div class="agnote">数据来自 Claude Code 自己的检查点(和 /rewind 同一份):每条提问前,它会把这一轮要改的文件先存一份。只记 Claude 用编辑工具改的文件,命令行里改的不算。</div>`;
+}
+function ckPickSess(sid) { if (sid === ckSid) return; ckSid = sid; ckSel = null; ckRenderSess(); ckLoad(); }
+function ckRenderList() {
+  const el = document.getElementById('ckListCol');
+  if (ckMsg) { el.innerHTML = `<div class="agempty">${esc(ckMsg)}</div>`; return; }
+  if (!ckSid) { el.innerHTML = '<div class="agempty">左边选一个会话。</div>'; return; }
+  if (!ckItems.length) { el.innerHTML = '<div class="agempty">这个会话没有检查点(可能是很早的会话,或在设置里关了「Rewind code (checkpoints)」)。</div>'; return; }
+  el.innerHTML = ckItems.map((it, i) => {
+    const n = it.files.length;
+    return `<div class="ckitem${it.id === ckSel ? ' sel' : ''}${n ? ' has' : ''}" onclick="ckPick('${escAttr(it.id)}')">
+      <div class="ckrail"><i></i>${i < ckItems.length - 1 ? '<b></b>' : ''}</div>
+      <div class="ckbody"><div class="p">${esc(it.prompt || '(空提问)')}</div>
+        <div class="m">${esc(fmtAgTime(it.at))} · ${n ? '这一轮改了 ' + n + ' 个文件' : '没改文件'}</div></div>
+    </div>`;
+  }).join('');
+}
+function ckPick(id) { ckSel = id; ckFile = null; ckRewArm = 0; ckRenderList(); ckRenderMain(); }
+const ckRel = (abs) => { const pj = ckPj(); const b = pj ? pj.path.replace(/[\\/]+$/, '') + '\\' : ''; return b && abs.toLowerCase().startsWith(b.toLowerCase()) ? abs.slice(b.length) : abs; };
+function ckRenderMain() {
+  const el = document.getElementById('ckMain');
+  const pj = ckPj();
+  const it = ckItems.find(x => x.id === ckSel);
+  const sess = ckSessList.find(s => s.sid === ckSid);
+  const open = ckSid && termTabs.some(t => t.sid === ckSid);
+  const undoBar = ckUndo ? `<div class="ckbar ${ckUndo.unsure ? 'warn' : 'ok'}">${ckUndo.unsure
+      ? `没能确认回退结果(${esc((ckUndo.msg || '').slice(0, 120))}),文件可能已经回退了一部分。回退前的样子存在 ${esc(ckUndo.dir)},可以撤销放回去。`
+      : `已把文件回退到「${esc((ckUndo.prompt || '').slice(0, 40))}」之前。回退前的样子存在 ${esc(ckUndo.dir)}。`}
+      <button class="btn ghost sm" onclick="ckUndoRewind()">撤销这次回退</button><button class="btn ghost sm" onclick="ckUndo=null;ckRenderMain()">知道了</button></div>` : '';
+  const gitBtn = pj ? `<button class="btn ghost sm" onclick="ckGit()">${ico('file', 'sm')}Git 未提交的改动</button>` : '';
+  if (!it) { el.innerHTML = undoBar + `<div class="ckacts">${gitBtn}</div><div class="agempty">${ckSid ? '左边选一个检查点。' : ''}</div>`; return; }
+  el.innerHTML = undoBar + `
+    <div>
+      <div style="font-size:15px;font-weight:600;line-height:1.5;word-break:break-all">${esc(it.prompt || '(空提问)')}</div>
+      <div class="tmsg" style="margin-top:4px">${esc(fmtAgTime(it.at))} · ${esc(sess ? (sess.title || '') : '')}</div>
+    </div>
+    ${open ? '<div class="ckbar warn">这个会话正开着。直接回退文件不会通知那边的 Claude,它还以为文件是改过的样子 —— 想连对话一起退,用「在会话里用 /rewind」。</div>' : ''}
+    <div class="ckacts">
+      <button class="btn sm" id="ckRewBtn" onclick="ckRewind()" ${it.files.length || ckItems.indexOf(it) > 0 ? '' : 'disabled'} title="用官方 claude --rewind-files:把这个会话改过的文件恢复成这条提问发出之前的样子">${ckBusy ? '回退中…' : '回退文件到这条提问之前'}</button>
+      <button class="btn ghost sm" onclick="ckRewindInSession()" title="在会话里输入 /rewind,用官方界面选择回退对话和/或代码">在会话里用 /rewind</button>
+      <button class="btn ghost sm" onclick="ckFork()" title="claude --resume --fork-session:复制一份对话接着聊,原会话不动">分叉成新会话</button>
+      ${gitBtn}
+    </div>
+    <div class="tmsg">这一轮改动的文件(点一个看改动):</div>
+    <div class="ckfiles">${it.files.map((f, i) => `<div class="ckf${f.key === ckFile ? ' sel' : ''}" data-i="${i}" onclick="ckShowDiff(${i})" title="${escAttr(f.abs)}"><span class="gf-k ${f.kind}">${f.kind}</span><span>${esc(ckRel(f.abs))}</span></div>`).join('') || '<span class="agempty">这一轮没有改文件。</span>'}</div>
+    <div class="ckdiff diffview" id="ckDiff"><span class="h">${it.files.length ? '↑ 点一个文件看这一轮对它的改动' : ''}</span></div>`;
+  if (!ckFile && it.files.length) ckShowDiff(0);
+}
+// 路径里有反斜杠,不能拼进 onclick 的字符串里(\c 会被当成转义) —— 一律传序号
+function ckGit() { const pj = ckPj(); if (pj) openGit(pj.path, pj.short || ''); }
+async function ckShowDiff(i) {
+  const pj = ckPj(), it = ckItems.find(x => x.id === ckSel);
+  const f = it && it.files[i];
+  if (!f) return;
+  const key = f.key;
+  ckFile = key;
+  document.querySelectorAll('#ckMain .ckf').forEach(x => x.classList.toggle('sel', x.dataset.i === String(i)));
+  const el = document.getElementById('ckDiff');
+  if (!el || !pj) return;
+  el.innerHTML = '<span class="h">读取中…</span>';
+  let d = '';
+  try { d = await hub.ckptDiff(pj.sessSlug, ckSid, ckSel, key); } catch (e) { d = '(没能生成对比)'; }
+  if (ckFile !== key) return;
+  el.innerHTML = (d || '(无差异)').split('\n').slice(0, 3000).map(l => {
+    const c = l.startsWith('+') ? 'a' : (l.startsWith('-') ? 'd' : 'h');
+    return `<span class="${c}">${esc(l) || ' '}</span>`;
+  }).join('');
+}
+async function ckRewind() {
+  const pj = ckPj(), it = ckItems.find(x => x.id === ckSel);
+  if (!pj || !it || ckBusy) return;
+  const btn = document.getElementById('ckRewBtn');
+  // 点两下才做:第一下变成「再点一次确认」,3 秒内没点就复原
+  if (Date.now() - ckRewArm > 3000) {
+    ckRewArm = Date.now();
+    if (btn) btn.textContent = '再点一次确认回退(之后能撤销)';
+    setTimeout(() => { const b = document.getElementById('ckRewBtn'); if (b && !ckBusy && Date.now() - ckRewArm >= 3000) b.textContent = '回退文件到这条提问之前'; }, 3100);
+    return;
+  }
+  ckRewArm = 0; ckBusy = true; ckRenderMain();
+  let r = null;
+  try { r = await hub.ckptRewind(pj.sessSlug, ckSid, it.id); } catch (e) { r = { ok: false, msg: String(e) }; }
+  ckBusy = false;
+  if (r && r.ok) { ckUndo = { bid: r.bid, dir: r.backupDir, prompt: it.prompt }; hubToast('文件已回退'); }
+  else if (r && r.unsure && r.bid) { ckUndo = { bid: r.bid, dir: r.backupDir, prompt: it.prompt, unsure: true, msg: r.msg }; hubToast('没能确认回退结果,备份已保留'); }
+  else hubToast('没能回退:' + ((r && r.msg) || '未知原因'));
+  await ckLoad();
+}
+async function ckUndoRewind() {
+  if (!ckUndo) return;
+  let r = null;
+  try { r = await hub.ckptUndo(ckUndo.bid); } catch (e) { r = { ok: false, msg: String(e) }; }
+  if (r && r.ok) { hubToast(`已撤销:放回 ${r.restored} 个文件` + (r.removed ? `,删掉 ${r.removed} 个回退时出现的文件` : '')); ckUndo = null; }
+  else hubToast('撤销失败:' + ((r && r.msg) || '未知原因') + '。备份还在 ' + ckUndo.dir);
+  await ckLoad();
+}
+async function ckRewindInSession() {
+  const pj = ckPj();
+  if (!pj || !ckSid) return;
+  const sess = ckSessList.find(s => s.sid === ckSid);
+  let t = termTabs.find(x => x.sid === ckSid);
+  if (!t) {
+    await openTerm(pj.path, pj.short, ckSid, (sess && sess.title) || pj.short);
+    t = termTabs.find(x => x.sid === ckSid);
+    if (!t) return;
+    await new Promise(r => setTimeout(r, 2500));    // 等 Claude Code 起来再填,早了会被启动画面吞掉
+  } else activateTerm(t.id);
+  hub.termInput(t.id, '/rewind');
+  hubToast('已在会话里填入 /rewind,回车后选要回到哪一条');
+}
+async function ckFork() {
+  const pj = ckPj();
+  if (!pj || !ckSid || !/^[0-9a-f-]{36}$/i.test(ckSid)) return;   // sid 要拼进命令行,只认 UUID
+  const sess = ckSessList.find(s => s.sid === ckSid);
+  await openTerm(pj.path, pj.short, '', '分叉 · ' + ((sess && sess.title) || pj.short), `claude --resume "${ckSid}" --fork-session`);
 }
 
 // <osc52>

@@ -14,6 +14,7 @@ const P = require('./lib/paths');
 const discover = require('./lib/discover');
 const agentApi = require('./lib/agent-api');
 const agents = require('./lib/agents');
+const ckpt = require('./lib/checkpoints');
 const claudeCli = require('./lib/claude-cli');
 const sysProxy = require('./lib/sysproxy').create();
 const { writeJsonAtomic } = require('./lib/atomic-json');
@@ -398,6 +399,37 @@ ipcMain.handle('hub:savePrompts', (e, l) => data.savePrompts(l));
 // 自定义 Agent(和上面 agent:* 的小九 API 是两回事)。数据只在 APP_DATA,不碰 ~/.claude。
 ipcMain.handle('agents:list', () => agents.load(P.AGENTS));
 ipcMain.handle('agents:save', async (e, list) => { try { return await agents.save(P.AGENTS, list); } catch (err) { return { ok: false, msg: String(err) }; } });
+// 检查点:读 Claude Code 自己的文件检查点(只读);回退走官方 claude --rewind-files,回退前先备份,能撤销
+ipcMain.handle('ckpt:list', async (e, slug, sid) => {
+  try { return Object.assign({ ok: true }, await ckpt.list(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid)); }
+  catch (err) { return { ok: false, msg: err && err.code === 'ENOENT' ? '找不到这个会话的记录' : String(err && err.message || err) }; }
+});
+ipcMain.handle('ckpt:diff', async (e, slug, sid, id, key) => {
+  try { return await ckpt.diff(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid, id, String(key || ''), P.CKPT_TMP); }
+  catch (err) { return '(没能生成对比:' + String(err && err.message || err) + ')'; }
+});
+ipcMain.handle('ckpt:rewind', async (e, slug, sid, id) => {
+  let bid = '';
+  try {
+    const { cwd } = await ckpt.list(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid);
+    bid = await ckpt.backupBeforeRewind(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid, id, P.REWIND_BACKUPS);
+    const { env } = await termEnv();
+    const r = await ckpt.runRewind(sid, id, cwd, claudeCli.withClaudeOnPath(env));
+    const backupDir = path.join(P.REWIND_BACKUPS, bid);
+    // 只有 claude 在动手前就拒绝了(untouched)才能确定文件没动、删掉备份;
+    // 超时 / 中途出错 / 看不懂(unsure)文件可能已经回退了一部分 —— 备份留着,界面照样给「撤销」
+    if (r.state === 'untouched') {
+      try { await fs.promises.rm(backupDir, { recursive: true, force: true }); } catch {}
+      return { ok: false, msg: r.msg || '回退没有成功' };
+    }
+    if (r.state === 'unsure') return { ok: false, unsure: true, bid, backupDir, msg: r.msg || '没能确认回退结果' };
+    return { ok: true, bid, msg: r.msg, backupDir };
+  } catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
+});
+ipcMain.handle('ckpt:undo', async (e, bid) => {
+  try { return Object.assign({ ok: true }, await ckpt.undoRewind(P.REWIND_BACKUPS, bid)); }
+  catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
+});
 // 运行:按 id 从磁盘取那一条(不信界面传来的内容),写参数文件,返回终端要执行的命令,顺手记一次运行
 ipcMain.handle('agents:launch', async (e, id, projPath) => {
   try {
