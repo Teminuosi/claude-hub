@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css">
 <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
 <script src="node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="node_modules/@xterm/addon-unicode11/lib/addon-unicode11.js"></script>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 :root {
@@ -3096,6 +3097,28 @@ function claudeForceOpen() {
 }
 // </claude-gate>
 
+// <osc52>
+// OSC 52 的内容是「目标;base64」,目标是 c / p / s 之类的字母(可省略)。返回要写进剪贴板的文字;
+// 读剪贴板的查询(?)、解不开的、空的 → 返回 ''(什么都不做)。test/osc52.test.js 截这段真源码测。
+function osc52Text(data) {
+  const i = String(data || '').indexOf(';');
+  if (i < 0) return '';
+  const b64 = String(data).slice(i + 1).trim();
+  if (!b64 || b64 === '?' || !/^[A-Za-z0-9+/=\s]+$/.test(b64)) return '';
+  try {
+    const bin = atob(b64.replace(/\s+/g, ''));
+    return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  } catch { return ''; }
+}
+// 写剪贴板只认「人刚在这个终端里动过」:窗口在前台,且 OSC52_WINDOW_MS 内在这个终端里松过鼠标或按过键。
+// 否则终端里任何输出(Claude 读到的恶意文件、cat 一个日志)都能悄悄把剪贴板换成一条命令,下次粘贴就中招。
+// Claude Code 全屏模式是「拖选 → 松开鼠标 → 发 OSC 52」,紧跟在松开鼠标之后,不受影响。
+const OSC52_WINDOW_MS = 2000;
+function osc52Allowed(lastUserAt, now, focused) {
+  return !!focused && lastUserAt > 0 && now - lastUserAt >= 0 && now - lastUserAt <= OSC52_WINDOW_MS;
+}
+// </osc52>
+
 let lastProxyNote = '';
 async function openTerm(projPath, projShort, sid, title, cmdOverride, skipCheck) {
   if (sid) { const ex = termTabs.find(t => t.sid === sid); if (ex) { activateTerm(ex.id); return; } }
@@ -3122,13 +3145,47 @@ async function openTerm(projPath, projShort, sid, title, cmdOverride, skipCheck)
   pane.id = 'tp-' + r.id;
   document.getElementById('termHost').appendChild(pane);
   const acc = (getComputedStyle(document.body).getPropertyValue('--acc') || '#3fd598').trim();
+  // 中文字形兜底:Cascadia/Consolas 没有汉字,不写兜底就由 Chromium 随手挑一个,字宽对不上格子
   const term = new Terminal({
-    fontFamily: "'Cascadia Mono','Consolas',monospace", fontSize: termFont, cursorBlink: true,
+    fontFamily: "'Cascadia Mono','Consolas','Microsoft YaHei UI','Microsoft YaHei','SimHei',monospace", fontSize: termFont, cursorBlink: true,
+    allowProposedApi: true,   // term.unicode 是 proposed API,不开就抛错
     theme: { background: '#171b20', foreground: '#e8edf2', cursor: acc, selectionBackground: 'rgba(130,201,176,.28)' }
   });
   const fit = new FitAddon.FitAddon();
   term.loadAddon(fit);
+  // 字宽表换成 Unicode 11:xterm 默认是 Unicode 6,和 Claude Code(string-width)算出的字宽不一致时,
+  // TUI 按自己的宽度挪光标重画输入行,就会把字盖掉、光标落到别处(中文输入时文字不显示/光标消失)。
+  // 解包版不同步 node_modules,插件可能没加载到 —— 拿不准就放行,继续用默认宽度表。
+  try {
+    if (typeof Unicode11Addon !== 'undefined') {
+      term.loadAddon(new Unicode11Addon.Unicode11Addon());
+      term.unicode.activeVersion = '11';
+    }
+  } catch {}
   term.open(pane);
+  // Claude Code 全屏模式(新版 ConPTY 下会自动进入)接管了鼠标:拖选文字是它自己做的,
+  // 选完用 OSC 52 让终端写剪贴板 —— xterm.js 默认不认这个序列,不接的话「选中即复制」就是空的。
+  // 只接「写」,不答「读」(? 查询一律不回,免得程序借终端读走剪贴板)。
+  // 只在人刚在这个终端里松开鼠标 / 按过键时才接(见 osc52Allowed),其余一律吞掉不写。
+  // 拖选时鼠标常在终端外面松开,mouseup 不一定落在 pane 上:按下在这个终端里,松开就在 window 上认
+  let userAt = 0, pressed = false;
+  const markUser = () => { userAt = Date.now(); };
+  pane.addEventListener('mousedown', () => { pressed = true; markUser(); }, true);
+  pane.addEventListener('keydown', markUser, true);
+  const onUp = () => {
+    if (!pane.isConnected) { window.removeEventListener('mouseup', onUp, true); return; }   // 标签关了:顺手解绑
+    if (pressed) { pressed = false; markUser(); }
+  };
+  window.addEventListener('mouseup', onUp, true);
+  term.parser.registerOscHandler(52, data => {
+    if (!osc52Allowed(userAt, Date.now(), document.hasFocus())) return true;
+    const s = osc52Text(data);
+    if (s) { navigator.clipboard.writeText(s).catch(() => {}); lastSelText = s; lastSelAt = Date.now(); }
+    return true;
+  });
+  // 输入法上屏后 DOM 渲染偶尔留着旧画面,补一次整屏重画
+  const ta = pane.querySelector('.xterm-helper-textarea');
+  if (ta) ta.addEventListener('compositionend', () => setTimeout(() => { try { term.refresh(0, term.rows - 1); } catch {} }, 0));
   term.registerLinkProvider(termLinkProvider(term));   // 路径/链接可点击
   term.onData(d => hub.termInput(r.id, d));
   term.onResize(({ cols, rows }) => hub.termResize(r.id, cols, rows));
@@ -3597,6 +3654,16 @@ async function tabRnCommit(inp, id) {
 hub.onTermData(m => { const t = termTabs.find(x => x.id === m.id); if (t) { t.lastDataAt = Date.now(); t.term.write(m.data); } });
 hub.onTermExit(m => { const t = termTabs.find(x => x.id === m.id); if (t) { t.clInstall = false; t.term.write('\r\n\x1b[90m[会话进程已结束,可点 × 关闭标签]\x1b[0m\r\n'); } });   // clInstall:安装进程结束了就不再算「正在安装」,否则没装上的人点不了第二次
 window.addEventListener('resize', () => { const t = termTabs.find(x => x.id === activeTerm); if (t) { try { t.fit.fit(); } catch {} } });
+// 只盯 window resize 不够:侧栏/专注/分屏等布局变化不改窗口大小,终端列数就停在旧值,
+// 右边被裁掉一截,输入行的字和光标跑到看不见的地方。盯住终端容器本身,尺寸一变就重新 fit 可见的面板。
+(() => {
+  const refit = () => termTabs.forEach(t => { if (t.pane && t.pane.offsetWidth > 0) { try { t.fit.fit(); } catch {} } });
+  let rt = null;
+  const later = () => { clearTimeout(rt); rt = setTimeout(refit, 60); };
+  try { new ResizeObserver(later).observe(document.getElementById('termHost')); } catch {}
+  // 等宽字体晚到时,首次 fit 量的是兜底字体的字宽,字体就绪后再量一次
+  try { document.fonts.ready.then(later); } catch {}
+})();
 
 // ===== 右栏:记忆 / 资料 / 技能 =====
 let grpOpen = store.get('hub_grp', { mem: true, doc: true, skill: true });

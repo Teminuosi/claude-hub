@@ -715,9 +715,15 @@ function spawnTermWith(px, projPath, title, sid, cmdOverride) {
     const id = 't' + Date.now() + Math.floor(Math.random() * 1e4);
     const cmd = cmdOverride ? cmdOverride : (sid ? `claude --resume "${sid}"` : 'claude');
     // 官方安装器把 claude 装到 用户目录\.local\bin 但不加 PATH —— 这里补上(追加在末尾,已经找得到的电脑行为不变)
-    const p = pty.spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', cmd], {
-      name: 'xterm-256color', cols: 120, rows: 32, cwd: projPath, env: claudeCli.withClaudeOnPath(px.env)
+    // dll=true:用 node-pty 自带的新版 ConPTY(conpty.dll + OpenConsole.exe),不用系统自带的那份。
+    // Win10 自带的 ConPTY 老旧:Claude Code 输出滚出屏幕的行直接丢掉(xterm 里没有滚动历史,滚轮翻不上去),
+    // 输入行里中文后面的字会被吞一格、光标和文字错位。实测见 test/conpty.test.js。
+    // 新版起不来(文件缺失、被拦)就退回系统自带的 —— 拿不准就放行,至少还能用。
+    const spawnPs = (dll) => pty.spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', cmd], {
+      name: 'xterm-256color', cols: 120, rows: 32, cwd: projPath, env: claudeCli.withClaudeOnPath(px.env), useConptyDll: dll
     });
+    let p;
+    try { p = spawnPs(true); } catch { p = spawnPs(false); }
     terms.set(id, p);
     termMeta.set(id, { projPath, short: title || '', sid: sid || '', title: title || '', buf: '' });
     p.onData(d => {
