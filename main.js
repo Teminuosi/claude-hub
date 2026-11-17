@@ -13,6 +13,7 @@ const git = require('./lib/git');
 const P = require('./lib/paths');
 const discover = require('./lib/discover');
 const agentApi = require('./lib/agent-api');
+const agents = require('./lib/agents');
 const claudeCli = require('./lib/claude-cli');
 const sysProxy = require('./lib/sysproxy').create();
 const { writeJsonAtomic } = require('./lib/atomic-json');
@@ -394,6 +395,20 @@ ipcMain.handle('hub:delCmd', (e, scope, name, projPath) => data.deleteCommand(sc
 ipcMain.handle('hub:mcpList', (e, p) => { try { return data.listMcp(p); } catch { return []; } });
 ipcMain.handle('hub:getPrompts', () => data.getPrompts());
 ipcMain.handle('hub:savePrompts', (e, l) => data.savePrompts(l));
+// 自定义 Agent(和上面 agent:* 的小九 API 是两回事)。数据只在 APP_DATA,不碰 ~/.claude。
+ipcMain.handle('agents:list', () => agents.load(P.AGENTS));
+ipcMain.handle('agents:save', async (e, list) => { try { return await agents.save(P.AGENTS, list); } catch (err) { return { ok: false, msg: String(err) }; } });
+// 运行:按 id 从磁盘取那一条(不信界面传来的内容),写参数文件,返回终端要执行的命令,顺手记一次运行
+ipcMain.handle('agents:launch', async (e, id, projPath) => {
+  try {
+    const cur = await agents.load(P.AGENTS);
+    const a = cur.list.find(x => x.id === id);
+    if (!a) return { ok: false, msg: cur.broken ? cur.msg : '没有这个 Agent' };
+    const cmd = agents.writeLaunch(P.AGENT_RUNS, a);
+    try { await agents.recordRun(P.AGENTS, id, projPath); } catch {}
+    return { ok: true, cmd };
+  } catch (err) { return { ok: false, msg: String(err) }; }
+});
 ipcMain.handle('hub:usageDaily', () => { try { return usage.dailySeries(30); } catch { return []; } });
 ipcMain.handle('hub:exportCsv', async () => {
   try {

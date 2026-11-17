@@ -516,7 +516,7 @@ body.zen .edge { display:block; }
 body.dragging * { cursor:grabbing !important; }
 
 /* ===== P1 内嵌终端 ===== */
-#termWrap { position:fixed; top:46px; left:262px; right:0; bottom:0; background:#0b0e19; display:none; flex-direction:column; z-index:20; border-left:1px solid var(--line); }
+#termWrap { position:fixed; top:46px; left:calc(262px + var(--navw)); right:0; bottom:0; background:#0b0e19; display:none; flex-direction:column; z-index:20; border-left:1px solid var(--line); }
 #termWrap.on { display:flex; }
 .termbar { display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid var(--line); background:var(--topbar); flex-shrink:0; }
 .termtabs { display:flex; gap:6px; overflow-x:auto; flex:1; min-width:0; }
@@ -802,6 +802,61 @@ body[data-theme="azure"] .brandmark, body[data-theme="daylight"] .brandmark { ba
 /* ---- 9. 焦点环(2px 主色,偏移 3px) ---- */
 :focus-visible { outline:2px solid var(--ring); outline-offset:3px; }
 .btn { transition:background .14s, color .14s; }
+
+/* ===== 左侧功能栏 + 功能页(会话 / Agents …) =====
+   顶栏原样不动;功能栏贴在顶栏下面最左边,原来的三栏和终端整体右移 --navw。 */
+:root { --navw:60px; }
+.main { margin-left:var(--navw); }
+#navRail { position:fixed; top:46px; left:0; bottom:0; width:var(--navw); display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 0; background:var(--bg0); border-right:1px solid var(--line); z-index:21; }
+.navi { width:50px; padding:7px 0 5px; display:flex; flex-direction:column; align-items:center; gap:3px; border:none; border-radius:8px; background:transparent; color:var(--tx2); font:inherit; font-size:10.5px; cursor:pointer; position:relative; }
+.navi .ic { width:19px; height:19px; }
+.navi:hover { background:var(--card); color:var(--tx); }
+.navi.on { background:color-mix(in srgb, var(--acc) 13%, transparent); color:var(--acc); font-weight:600; }
+.navi .ncnt { position:absolute; top:3px; right:6px; min-width:15px; height:15px; padding:0 4px; border-radius:99px; background:var(--acc); color:var(--acc-ink); font-size:9.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+body.zen #navRail { display:none; }
+body.zen .main { margin-left:0; }
+.fpage { position:fixed; top:46px; left:var(--navw); right:0; bottom:0; display:none; z-index:30; background:var(--bg1); }
+.fpage.on { display:flex; }
+
+/* Agents 页 */
+#agList { width:270px; flex-shrink:0; background:var(--bg0); border-right:1px solid var(--line); padding:14px 10px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+.aghead { display:flex; align-items:center; gap:6px; padding:0 4px 8px; }
+.aghead b { flex:1; font-size:14px; }
+.agrow { padding:9px 11px; border-radius:7px; border:1px solid transparent; cursor:pointer; }
+.agrow:hover { background:var(--card); border-color:var(--line); }
+.agrow.sel { background:var(--sel, var(--card)); border-color:color-mix(in srgb, var(--acc) 35%, transparent); }
+.agrow .n { display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; }
+.agrow .n span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.agrow .m { font-size:11px; color:var(--tx3); margin:3px 0 0 14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.agdot { width:7px; height:7px; border-radius:99px; background:var(--tx3); flex-shrink:0; opacity:.6; }
+.agdot.run { background:var(--acc); opacity:1; }
+.agrun { font-size:11px; color:var(--acc); font-weight:600; }
+.agnote { margin-top:auto; padding:10px 11px; border:1px dashed var(--line2); border-radius:7px; color:var(--tx3); font-size:11px; line-height:1.6; }
+#agMain { flex:1; min-width:0; padding:18px 22px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+.agtop { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.agtop h2 { margin:0; font-size:18px; }
+.agtop .d { color:var(--tx2); font-size:12px; margin-top:3px; }
+.agtop select { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:6px 8px; font:inherit; font-size:12px; max-width:220px; }
+.aggrid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; flex:1; min-height:0; }
+@media (max-width: 1100px) { .aggrid { grid-template-columns:minmax(0, 1fr); } }
+.agcard { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:12px; min-height:0; }
+.agcard > b { font-size:13px; }
+.agf { display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--tx2); }
+.agf input[type=text], .agf textarea { background:var(--bg1); border:1px solid var(--line); color:var(--tx); border-radius:6px; padding:7px 10px; font:inherit; font-size:12px; outline:none; }
+.agf input[type=text]:focus, .agf textarea:focus { border-color:color-mix(in srgb, var(--acc) 55%, transparent); }
+.agf textarea { min-height:170px; flex:1; resize:vertical; font-family:'Cascadia Mono','Consolas','Microsoft YaHei UI',monospace; line-height:1.6; }
+.agf .hint { color:var(--tx3); font-size:11px; }
+.agtools { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; }
+.agtools label { display:flex; align-items:flex-start; gap:7px; color:var(--tx); font-size:12px; cursor:pointer; }
+.agtools label small { display:block; color:var(--tx3); font-size:10.5px; }
+.agacts { display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+.agacts .tmsg { margin-right:auto; }
+.btn.danger { color:var(--red); }
+.agtbl { width:100%; border-collapse:collapse; font-size:12px; }
+.agtbl td { padding:8px 4px; border-top:1px solid var(--line); color:var(--tx2); }
+.agtbl td:first-child { color:var(--tx); }
+.agempty { color:var(--tx3); font-size:12px; padding:6px 0; }
+.agwarn { padding:10px 12px; border-radius:7px; border:1px solid color-mix(in srgb, var(--red) 45%, transparent); background:color-mix(in srgb, var(--red) 8%, transparent); color:var(--tx); font-size:12px; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -922,6 +977,14 @@ body[data-theme="azure"] .brandmark, body[data-theme="daylight"] .brandmark { ba
       </div>
     </div>
   </div>
+</div>
+<nav id="navRail" aria-label="功能">
+  <button class="navi on" data-page="sess" onclick="setPage('sess')" title="会话:项目、会话和内嵌终端"></button>
+  <button class="navi" data-page="agents" onclick="setPage('agents')" title="Agents:存好的提示词 + 模型 + 工具,一键在项目里跑"></button>
+</nav>
+<div class="fpage" id="pageAgents">
+  <aside id="agList"></aside>
+  <section id="agMain"></section>
 </div>
 <div class="edge l" id="edgeL"></div>
 <div class="edge r" id="edgeR"></div>
@@ -1129,7 +1192,8 @@ const I = {
   ext: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/>',
   pen: '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>'
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+  bot: '<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4"/><circle cx="9.5" cy="13.5" r="1"/><circle cx="14.5" cy="13.5" r="1"/>'
 };
 // Claude 官方星芒(claude.ai 的 favicon 同款,取自官方品牌资源)。
 // 它是填充图形,和上面那套 fill:none + stroke 的线性图标不是一路,所以单独放、单独渲染。
@@ -2145,6 +2209,7 @@ function applySessFilter() {
 
 // ===== 会话 =====
 async function selProj(path, focusSid) {
+  if (curPage !== 'sess') setPage('sess');   // 从别的功能页点到项目/会话,回到会话页才看得见
   curPath = path;
   refreshCtx();   // 切项目立刻换读数
   const p = projects.find(x => x.path === path);
@@ -3097,6 +3162,191 @@ function claudeForceOpen() {
 }
 // </claude-gate>
 
+// ===== 左侧功能栏:切功能页 =====
+// 'sess' = 原来的项目/会话/终端那一整套(什么都不盖);其它值 = 盖一张全屏功能页上去。
+let curPage = 'sess';
+function setPage(pg) {
+  curPage = pg;
+  document.querySelectorAll('#navRail .navi').forEach(b => b.classList.toggle('on', b.dataset.page === pg));
+  document.getElementById('pageAgents').classList.toggle('on', pg === 'agents');
+  if (pg === 'agents') agOpen();
+  if (pg === 'sess') {
+    // 回到会话页:终端可能在功能页盖着的时候换过尺寸,重新量一下
+    const t = termTabs.find(x => x.id === activeTerm);
+    if (t) setTimeout(() => { try { t.fit.fit(); } catch {} t.term.focus(); }, 30);
+  }
+}
+(() => {
+  const nav = document.querySelectorAll('#navRail .navi');
+  const def = { sess: ['terminal', '会话'], agents: ['bot', 'Agents'] };
+  nav.forEach(b => { const d = def[b.dataset.page]; if (d) b.innerHTML = ico(d[0]) + '<span>' + d[1] + '</span>'; });
+})();
+
+// ===== Agents 页 =====
+// 一条 Agent = 名称 + 说明 + 模型 + 追加的系统提示词 + 免确认的工具。存在 %APPDATA%\claude-hub\agents.json(lib/agents.js)。
+// 运行 = 主进程按 id 从磁盘取这一条、写好参数文件,这边拿回一行命令,在选中的项目里开一个内嵌终端标签。
+const AG_TOOLS = [
+  ['read', '读文件 / 搜索', 'Read · Grep · Glob'],
+  ['gitread', '只读 git', 'git diff / log / status / show'],
+  ['write', '改文件', 'Edit · Write'],
+  ['bash', '任意命令', 'Bash(全部命令)']
+];
+let agList = [], agSel = null, agBroken = '', agDirty = false, agProj = null, agDelArm = 0;
+const agRunning = (id) => termTabs.filter(t => t.agentId === id);
+async function agLoad() {
+  let r = null;
+  try { r = await hub.agentsList(); } catch {}
+  agList = (r && r.list) || [];
+  agBroken = r && r.broken ? (r.msg || 'agents.json 读不懂') : '';
+  if (!agList.find(a => a.id === agSel)) agSel = agList[0] ? agList[0].id : null;
+}
+async function agOpen() {
+  if (!agDirty) await agLoad();
+  if (!agProj || !projects.find(p => p.path === agProj)) agProj = termProj || curPath || (projects[0] && projects[0].path) || null;
+  agRender();
+}
+function agRenderList() {
+  const el = document.getElementById('agList');
+  el.innerHTML = `
+    <div class="aghead"><b>Agents</b><button class="btn sm" onclick="agNew()">${ico('plus', 'sm')}新建</button></div>
+    ${agList.map(a => {
+      const run = agRunning(a.id).length;
+      const last = a.runs[0];
+      return `<div class="agrow${a.id === agSel ? ' sel' : ''}" onclick="agPick('${escAttr(a.id)}')">
+        <div class="n"><i class="agdot${run ? ' run' : ''}"></i><span>${esc(a.name)}</span>${run ? `<span class="agrun" style="flex:none">运行中${run > 1 ? ' ' + run : ''}</span>` : ''}</div>
+        <div class="m">${esc(a.desc || (a.model ? '模型 ' + a.model : '跟随默认模型'))}${last ? ' · ' + esc(fmtAgTime(last.at)) : ''}</div>
+      </div>`;
+    }).join('') || '<div class="agempty" style="padding:6px 4px">还没有 Agent,点右上「新建」。</div>'}
+    <div class="agnote">只存在本客户端的 agents.json,不改 Claude Code 自己的配置。运行时用官方参数 --append-system-prompt / --model / --allowedTools。</div>`;
+}
+function fmtAgTime(ts) {
+  const d = new Date(ts), now = new Date();
+  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if (d.toDateString() === now.toDateString()) return '今天 ' + hm;
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return '昨天 ' + hm;
+  return (d.getMonth() + 1) + '-' + d.getDate() + ' ' + hm;
+}
+function agRender() {
+  agRenderList();
+  const main = document.getElementById('agMain');
+  const a = agList.find(x => x.id === agSel);
+  const warn = agBroken ? `<div class="agwarn">${esc(agBroken)}<br>原来的文件不会被悄悄覆盖:下次保存时会先把它改名成 agents.json.broken-时间 留作备份。</div>` : '';
+  if (!a) {
+    main.innerHTML = warn + `<div class="agcard" style="max-width:560px"><b>Agent 是什么</b>
+      <div class="tmsg" style="line-height:1.8">把常用的一段要求(比如「只读审查当前分支」「给改过的函数补测试」)连同模型和免确认的工具存成一条,
+      以后在任意项目里点一下「运行」,就开一个带着这些设置的 Claude Code 会话。</div>
+      <div><button class="btn" onclick="agNew()">${ico('plus', 'sm')}新建第一个 Agent</button></div></div>`;
+    return;
+  }
+  const run = agRunning(a.id);
+  const projOpts = orderedProjects().map(p => `<option value="${escAttr(p.path)}"${p.path === agProj ? ' selected' : ''}>${esc(p.short || p.name || p.path)}</option>`).join('');
+  main.innerHTML = warn + `
+    <div class="agtop">
+      <div style="flex:1;min-width:200px"><h2>${esc(a.name)}</h2><div class="d">${esc(a.desc || '没写说明')}</div></div>
+      <label class="tmsg" style="display:flex;align-items:center;gap:6px">在项目<select id="agProjSel" onchange="agProj=this.value">${projOpts || '<option value="">(还没有项目)</option>'}</select></label>
+      <button class="btn" onclick="agRun()" ${projOpts ? '' : 'disabled'}>${ico('terminal', 'sm')}运行</button>
+    </div>
+    <div class="aggrid">
+      <div class="agcard">
+        <b>配置</b>
+        <label class="agf">名称<input type="text" id="agName" maxlength="60" value="${escAttr(a.name)}" oninput="agTouch()"></label>
+        <label class="agf">说明<input type="text" id="agDesc" maxlength="200" value="${escAttr(a.desc)}" placeholder="一句话说它干什么" oninput="agTouch()"></label>
+        <label class="agf">模型<input type="text" id="agModel" maxlength="80" value="${escAttr(a.model)}" placeholder="留空 = 跟随 Claude Code 当前设置(/model)" oninput="agTouch()">
+          <span class="hint">填 claude --model 认的名字(别名或完整模型名);不写死候选,和设置里去掉模型下拉是同一个道理。</span></label>
+        <label class="agf" style="flex:1">追加的系统提示词<textarea id="agPrompt" spellcheck="false" oninput="agTouch()" placeholder="例如:你是严格的代码审查员。对比当前分支和 main,只报真实问题,按严重程度排序,每条给出文件和行号。不要修改任何文件。">${esc(a.prompt)}</textarea>
+          <span class="hint">接在 Claude Code 默认系统提示词后面,项目的 CLAUDE.md 照常生效。</span></label>
+        <div class="agf">免确认的工具
+          <div class="agtools">${AG_TOOLS.map(([k, t, s]) => `<label><input type="checkbox" data-tool="${k}"${a.tools.includes(k) ? ' checked' : ''} onchange="agTouch()"><span>${esc(t)}<small>${esc(s)}</small></span></label>`).join('')}</div>
+          <span class="hint">勾上的不再逐次问你;没勾的照样会问,不是禁用。</span></div>
+        <div class="agacts">
+          <span class="tmsg" id="agMsg">${agDirty ? '有改动还没保存' : ''}</span>
+          <button class="btn ghost sm danger" id="agDelBtn" onclick="agDelete()">删除</button>
+          <button class="btn sm" onclick="agSave()">保存</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+        <div class="agcard">
+          <b>正在运行</b>
+          ${run.length ? `<table class="agtbl">${run.map(t => `<tr><td>${esc(t.title)}</td><td>${esc(t.projShort || '')}</td><td style="text-align:right"><button class="btn ghost sm" onclick="activateTerm('${escAttr(t.id)}')">切过去看</button></td></tr>`).join('')}</table>`
+            : '<div class="agempty">没有在跑的。运行后会在「会话」里多一个终端标签,输出都在那里。</div>'}
+        </div>
+        <div class="agcard">
+          <b>运行记录</b>
+          ${a.runs.length ? `<table class="agtbl">${a.runs.map(r => { const p = projects.find(x => x.path === r.proj); return `<tr><td>${esc(p ? (p.short || p.name) : (r.proj.split('\\').pop() || r.proj))}</td><td style="text-align:right">${esc(fmtAgTime(r.at))}</td></tr>`; }).join('')}</table>`
+            : '<div class="agempty">还没运行过。</div>'}
+        </div>
+      </div>
+    </div>`;
+}
+function agTouch() { agDirty = true; const m = document.getElementById('agMsg'); if (m) m.textContent = '有改动还没保存'; }
+// 把表单里的值收回到当前这条(只收用户能改的那几项)
+function agCollect() {
+  const a = agList.find(x => x.id === agSel);
+  if (!a || !document.getElementById('agName')) return;
+  a.name = document.getElementById('agName').value.trim() || a.name;
+  a.desc = document.getElementById('agDesc').value.trim();
+  a.model = document.getElementById('agModel').value.trim();
+  a.prompt = document.getElementById('agPrompt').value;
+  a.tools = [...document.querySelectorAll('#agMain [data-tool]')].filter(c => c.checked).map(c => c.dataset.tool);
+}
+async function agPersist() {
+  let r = null;
+  try { r = await hub.agentsSave(agList); } catch (e) { r = { ok: false, msg: String(e) }; }
+  if (!r || !r.ok) { hubToast('保存失败:' + ((r && r.msg) || '未知原因')); return false; }
+  agList = r.list; agBroken = ''; agDirty = false;
+  return true;
+}
+async function agSave() {
+  agCollect();
+  if (await agPersist()) { hubToast('已保存'); agRender(); }
+}
+function agPick(id) {
+  if (id === agSel) return;
+  agCollect();          // 切走前先把没保存的改动留在内存里,不丢
+  agSel = id; agDelArm = 0;
+  agRender();
+}
+async function agNew() {
+  agCollect();
+  const a = { id: 'a' + Date.now().toString(36), name: '新 Agent', desc: '', model: '', prompt: '', tools: ['read'], runs: [] };
+  agList.push(a); agSel = a.id;
+  if (await agPersist()) { agRender(); const n = document.getElementById('agName'); if (n) { n.focus(); n.select(); } }
+}
+async function agDelete() {
+  const btn = document.getElementById('agDelBtn');
+  // 点两下才删:第一下变成「再点一次确认」,3 秒内没点就复原
+  if (Date.now() - agDelArm > 3000) {
+    agDelArm = Date.now();
+    if (btn) btn.textContent = '再点一次确认删除';
+    setTimeout(() => { const b = document.getElementById('agDelBtn'); if (b && Date.now() - agDelArm >= 3000) b.textContent = '删除'; }, 3100);
+    return;
+  }
+  agDelArm = 0;
+  agCollect();
+  agList = agList.filter(x => x.id !== agSel);
+  agSel = agList[0] ? agList[0].id : null;
+  if (await agPersist()) { hubToast('已删除'); agRender(); }
+}
+async function agRun() {
+  const a = agList.find(x => x.id === agSel);
+  const pj = projects.find(p => p.path === agProj);
+  if (!a || !pj) { hubToast('先选一个项目'); return; }
+  // 跑的永远是磁盘上那一份:有没保存的改动先存
+  if (agDirty) { agCollect(); if (!(await agPersist())) return; }
+  let r = null;
+  try { r = await hub.agentsLaunch(a.id, pj.path); } catch (e) { r = { ok: false, msg: String(e) }; }
+  if (!r || !r.ok) { hubToast('没能启动:' + ((r && r.msg) || '未知原因')); return; }
+  const title = 'Agent · ' + a.name;
+  // 命令不是以 claude 开头的,openTerm 自己不会查装没装 —— 这里替它查;被拦下的话装好后照原样(带着 Agent 设置)开出来
+  if (!(await claudeReady({ projPath: pj.path, projShort: pj.short, title, cmdOverride: r.cmd }))) return;
+  const before = new Set(termTabs.map(t => t.id));
+  await openTerm(pj.path, pj.short, '', title, r.cmd, true);
+  const tab = termTabs.find(t => !before.has(t.id));
+  if (tab) { tab.agentId = a.id; renderTermTabs(); }
+  agLoad();             // 运行记录在主进程里记过了,后台刷一下,回到这页时就是新的
+}
+
 // <osc52>
 // OSC 52 的内容是「目标;base64」,目标是 c / p / s 之类的字母(可省略)。返回要写进剪贴板的文字;
 // 读剪贴板的查询(?)、解不开的、空的 → 返回 ''(什么都不做)。test/osc52.test.js 截这段真源码测。
@@ -3304,6 +3554,7 @@ async function openTerm(projPath, projShort, sid, title, cmdOverride, skipCheck)
 function activateTerm(id) {
   const t = termTabs.find(x => x.id === id);
   if (!t) return;
+  if (curPage !== 'sess') setPage('sess');   // 铃铛/完成条跳到某个会话时,别让它藏在功能页后面
   activeTerm = id;
   termProj = t.projPath;
   refreshCtx();   // 切会话立刻换成这个会话的上下文读数,别等 15 秒
