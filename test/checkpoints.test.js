@@ -129,7 +129,7 @@ test('回退前备份 → 撤销:改过的放回去,原来没有的删掉', asyn
   assert.equal(fs.readFileSync(path.join(f.proj, 'a.txt'), 'utf8'), 'v3 第二轮\n');
   assert.equal(fs.readFileSync(path.join(f.proj, 'lib', 'c.js'), 'utf8'), 'c\n');
   assert.equal(fs.existsSync(path.join(f.proj, 'b.txt')), false);
-  assert.deepEqual(r, { restored: 2, removed: 1 });
+  assert.deepEqual(r, { restored: 2, removed: 1, skipped: [] });   // 没记过回退后的指纹(老备份):照原来的做法全部放回
   await assert.rejects(ck.undoRewind(bk, '../x'));
 });
 
@@ -157,3 +157,27 @@ test('只认 UUID / 合法 slug;官方回退命令长这样', async () => {
   await assert.rejects(ck.list('/p', '/h', '..\\..', SID));
   await assert.rejects(ck.list('/p', '/h', 'ok', '../../etc'));
 });
+
+// 2026-11-17 自查(审查第 7 条):撤销时会删掉「回退前不存在」的文件、覆盖改过的文件 ——
+// 回退之后人又新建 / 改过的,也一起被删 / 被盖。现在回退刚做完就记下每个文件的指纹,撤销时指纹对不上的不碰。
+test('撤销回退:回退之后又被改过 / 新建的文件不碰,其余照常放回', async () => {
+  const f = fixture();
+  const bk = path.join(f.root, 'rewind-backups');
+  const P2 = path.join(f.home, 'projects');
+  const bid = await ck.backupBeforeRewind(P2, f.home, f.slug, SID, Q1, bk, 456);
+  // 官方回退的结果:a = v1,c 被删,b 不存在
+  fs.writeFileSync(path.join(f.proj, 'a.txt'), 'v1 原始内容\n');
+  fs.unlinkSync(path.join(f.proj, 'lib', 'c.js'));
+  await ck.recordAfterRewind(bk, bid);
+  // 回退之后人又动了:新建了 b.txt、改了 a.txt;c.js 没动
+  fs.writeFileSync(path.join(f.proj, 'b.txt'), '我后来新建的');
+  fs.writeFileSync(path.join(f.proj, 'a.txt'), '我后来改的');
+  const r = await ck.undoRewind(bk, bid);
+  assert.equal(fs.readFileSync(path.join(f.proj, 'b.txt'), 'utf8'), '我后来新建的');
+  assert.equal(fs.readFileSync(path.join(f.proj, 'a.txt'), 'utf8'), '我后来改的');
+  assert.equal(fs.readFileSync(path.join(f.proj, 'lib', 'c.js'), 'utf8'), 'c\n');   // 没被动过的照常放回
+  assert.equal(r.restored, 1);
+  assert.equal(r.removed, 0);
+  assert.deepEqual(r.skipped.map(p => path.basename(p)).sort(), ['a.txt', 'b.txt']);
+});
+

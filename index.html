@@ -3287,7 +3287,7 @@ function agRenderList() {
     ${agList.map(a => {
       const run = agRunning(a.id).length;
       const last = a.runs[0];
-      return `<div class="agrow${a.id === agSel ? ' sel' : ''}" onclick="agPick('${escAttr(a.id)}')">
+      return `<div class="agrow${a.id === agSel ? ' sel' : ''}" onclick="agPick('${escAttr(escJs(a.id))}')">
         <div class="n"><i class="agdot${run ? ' run' : ''}"></i><span>${esc(a.name)}</span>${run ? `<span class="agrun" style="flex:none">运行中${run > 1 ? ' ' + run : ''}</span>` : ''}</div>
         <div class="m">${esc(a.desc || (a.model ? '模型 ' + a.model : '跟随默认模型'))}${last ? ' · ' + esc(fmtAgTime(last.at)) : ''}</div>
       </div>`;
@@ -3343,7 +3343,7 @@ function agRender() {
       <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
         <div class="agcard">
           <b>正在运行</b>
-          ${run.length ? `<table class="agtbl">${run.map(t => `<tr><td>${esc(t.title)}</td><td>${esc(t.projShort || '')}</td><td style="text-align:right"><button class="btn ghost sm" onclick="activateTerm('${escAttr(t.id)}')">切过去看</button></td></tr>`).join('')}</table>`
+          ${run.length ? `<table class="agtbl">${run.map(t => `<tr><td>${esc(t.title)}</td><td>${esc(t.projShort || '')}</td><td style="text-align:right"><button class="btn ghost sm" onclick="activateTerm('${escAttr(escJs(t.id))}')">切过去看</button></td></tr>`).join('')}</table>`
             : '<div class="agempty">没有在跑的。运行后会在「会话」里多一个终端标签,输出都在那里。</div>'}
         </div>
         <div class="agcard">
@@ -3434,6 +3434,11 @@ const MC_SCOPE = {
 };
 const MC_ST = { ok: '已连接', fail: '连接失败', pending: '待批准', auth: '要登录', disabled: '已停用', unknown: '未检测' };
 let mcProj = null, mcCfg = null, mcStatus = null, mcStatusSeq = 0, mcFilter = 'all', mcSel = null, mcSide = 'detail', mcRows = [];
+// <mc-sel>
+// 选中的那一行按「范围 + 名称」记,不按行号:重新读配置后行的顺序可能变,按行号「移除」会删错服务器
+const mcKey = (r) => r ? r.scope + '|' + r.name : null;
+const mcSelRow = () => mcSel === null ? null : (mcRows.find(r => mcKey(r) === mcSel) || null);
+// </mc-sel>
 let mcForm = { name: '', scope: 'local', type: 'stdio', command: '', args: '', env: '', url: '', headers: '', json: '' }, mcAddMode = 'form';
 let mcBusy = false, mcRes = '', mcDelArm = 0, mcDesk = null, mcDeskSel = new Set(), mcDeskScope = 'user';
 const mcPj = () => projects.find(p => p.path === mcProj);
@@ -3500,7 +3505,7 @@ function mcRender() {
     ${broken}
     <div class="mcchips">${chips}</div>
     ${mcRows.length ? `<table class="mctbl"><thead><tr><th>名称</th><th>类型</th><th>范围</th><th>命令 / 地址</th><th>状态</th></tr></thead><tbody>
-      ${shown.map(([r, i]) => `<tr class="${mcSel === i && mcSide === 'detail' ? 'sel' : ''}" onclick="mcPick(${i})">
+      ${shown.map(([r, i]) => `<tr class="${mcSel === mcKey(r) && mcSide === 'detail' ? 'sel' : ''}" onclick="mcPick(${i})">
         <td><b>${esc(r.name)}</b></td><td>${esc(r.type || '')}</td>
         <td><span class="mcbadge" title="${escAttr((MC_SCOPE[r.scope] || [])[1] || '')}">${esc((MC_SCOPE[r.scope] || [r.scope])[0])}</span></td>
         <td><div class="tgt" title="${escAttr(mcTarget(r))}">${esc(mcTarget(r))}</div></td><td>${mcStHtml(r)}</td></tr>`).join('')}
@@ -3511,7 +3516,7 @@ function mcRender() {
     <div class="agnote" style="margin-top:0">「项目共享」的服务器(.mcp.json)要你在 Claude Code 里批准一次才会连 —— 在这个项目里开会话时它会问。改完配置后,已经开着的会话要重开才生效。</div>`;
   mcRenderSide();
 }
-function mcPick(i) { mcSel = i; mcSide = 'detail'; mcDelArm = 0; mcRes = ''; mcRender(); }
+function mcPick(i) { mcSel = mcKey(mcRows[i]); mcSide = 'detail'; mcDelArm = 0; mcRes = ''; mcRender(); }
 function mcShow(which) {
   mcSide = which; mcRes = ''; mcSel = null;
   if (which === 'add' && !mcPj() && mcForm.scope !== 'user') mcForm.scope = 'user';
@@ -3573,7 +3578,7 @@ function mcRenderSide() {
       ${body}${res}`;
     return;
   }
-  const s = mcSel !== null ? mcRows[mcSel] : null;
+  const s = mcSelRow();
   if (!s) {
     el.innerHTML = `<div class="aghead"><b>详情</b></div><div class="agempty">点左边一行看详情。</div>${res}`;
     return;
@@ -3616,7 +3621,7 @@ async function mcAdd() {
   if (r && r.results && r.results.some(x => x.ok)) mcCheck();
 }
 async function mcRemove() {
-  const s = mcSel !== null ? mcRows[mcSel] : null;
+  const s = mcSelRow();
   if (!s || mcBusy || s.scope === 'connector') return;
   if (Date.now() - mcDelArm > 3000) {
     mcDelArm = Date.now();
@@ -3686,7 +3691,7 @@ function ckRenderSess() {
     <select onchange="ckProj=this.value;ckSid=null;ckLoadSessions()" aria-label="项目">${opts || '<option>(还没有项目)</option>'}</select>
     ${ckSessList.map(s => {
       const open = termTabs.some(t => t.sid === s.sid);
-      return `<div class="cksess${s.sid === ckSid ? ' sel' : ''}" onclick="ckPickSess('${escAttr(s.sid)}')">
+      return `<div class="cksess${s.sid === ckSid ? ' sel' : ''}" onclick="ckPickSess('${escAttr(escJs(s.sid))}')">
         <div class="t"><span>${esc(s.title || s.sid.slice(0, 8))}</span>${open ? '<em class="ckopen">开着</em>' : ''}</div>
         <div class="m">${esc(fmtAgTime(s.mtime))}</div></div>`;
     }).join('') || '<div class="agempty" style="padding:6px 4px">这个项目还没有会话。</div>'}
@@ -3700,7 +3705,7 @@ function ckRenderList() {
   if (!ckItems.length) { el.innerHTML = '<div class="agempty">这个会话没有检查点(可能是很早的会话,或在设置里关了「Rewind code (checkpoints)」)。</div>'; return; }
   el.innerHTML = ckItems.map((it, i) => {
     const n = it.files.length;
-    return `<div class="ckitem${it.id === ckSel ? ' sel' : ''}${n ? ' has' : ''}" onclick="ckPick('${escAttr(it.id)}')">
+    return `<div class="ckitem${it.id === ckSel ? ' sel' : ''}${n ? ' has' : ''}" onclick="ckPick('${escAttr(escJs(it.id))}')">
       <div class="ckrail"><i></i>${i < ckItems.length - 1 ? '<b></b>' : ''}</div>
       <div class="ckbody"><div class="p">${esc(it.prompt || '(空提问)')}</div>
         <div class="m">${esc(fmtAgTime(it.at))} · ${n ? '这一轮改了 ' + n + ' 个文件' : '没改文件'}</div></div>
@@ -3782,10 +3787,28 @@ async function ckUndoRewind() {
   if (!ckUndo) return;
   let r = null;
   try { r = await hub.ckptUndo(ckUndo.bid); } catch (e) { r = { ok: false, msg: String(e) }; }
-  if (r && r.ok) { hubToast(`已撤销:放回 ${r.restored} 个文件` + (r.removed ? `,删掉 ${r.removed} 个回退时出现的文件` : '')); ckUndo = null; }
+  if (r && r.ok) {
+    const sk = r.skipped || [];
+    hubToast(`已撤销:放回 ${r.restored} 个文件` + (r.removed ? `,删掉 ${r.removed} 个回退时出现的文件` : '')
+      + (sk.length ? `。有 ${sk.length} 个文件回退后又被改过,没动它们:${sk.slice(0, 3).map(p => p.split(/[\\/]/).pop()).join('、')}${sk.length > 3 ? ' 等' : ''}(原来的内容还在 ${ckUndo.dir})` : ''));
+    ckUndo = null;
+  }
   else hubToast('撤销失败:' + ((r && r.msg) || '未知原因') + '。备份还在 ' + ckUndo.dir);
   await ckLoad();
 }
+// <ck-prompt>
+// 看终端屏幕判断 Claude Code 能不能接输入了:
+//   'trust' 还停在「信任这个文件夹吗」—— 这时填字会落进对话框,不能填
+//   'ready' 出现了输入行(❯ 或 > 开头,且不是 1. 2. 这种选项菜单)
+//   'wait'  其余(启动画面、还在加载)
+function ckPromptState(lines) {
+  const ls = (lines || []).map(l => String(l || ''));
+  if (ls.some(l => /trust (this|the files in this) folder/i.test(l))) return 'trust';
+  const input = ls.some(l => /^\s*[│|]?\s*[❯>](\s|$)/.test(l) && !/^\s*[│|]?\s*[❯>]\s*\d+\./.test(l));
+  return input ? 'ready' : 'wait';
+}
+// </ck-prompt>
+const ckScreen = (t) => { try { const b = t.term.buffer.active; return Array.from({ length: t.term.rows }, (_, i) => { const l = b.getLine(b.viewportY + i); return l ? l.translateToString(true) : ''; }); } catch { return []; } };
 async function ckRewindInSession() {
   const pj = ckPj();
   if (!pj || !ckSid) return;
@@ -3795,8 +3818,19 @@ async function ckRewindInSession() {
     await openTerm(pj.path, pj.short, ckSid, (sess && sess.title) || pj.short);
     t = termTabs.find(x => x.sid === ckSid);
     if (!t) return;
-    await new Promise(r => setTimeout(r, 2500));    // 等 Claude Code 起来再填,早了会被启动画面吞掉
   } else activateTerm(t.id);
+  // 等 Claude Code 出现输入行、而且画面停下来(连着两次一样)再填 —— 早了会被启动画面吞掉,或者落进信任对话框
+  let prev = '', state = 'wait';
+  for (let i = 0; i < 100; i++) {
+    const scr = ckScreen(t), cur = scr.join('\n');
+    state = ckPromptState(scr);
+    if (state === 'trust') { hubToast('先在终端里确认信任这个文件夹,再点一次「在会话里用 /rewind」'); return; }
+    if (state === 'ready' && cur === prev) break;
+    prev = cur;
+    await new Promise(r => setTimeout(r, 300));
+    if (!termTabs.includes(t)) return;   // 等的时候标签被关了
+  }
+  if (state !== 'ready') { hubToast('Claude Code 还没准备好,等它起来后在会话里手动输入 /rewind'); return; }
   hub.termInput(t.id, '/rewind');
   hubToast('已在会话里填入 /rewind,回车后选要回到哪一条');
 }

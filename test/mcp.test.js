@@ -126,3 +126,4 @@ test('readDesktop:没装 Claude Desktop 就是空;值留在主进程,摘要不�
   assert.deepEqual(r.servers[0].sum.envKeys, ['KEY']);
   assert.ok(!JSON.stringify(r.servers[0].sum).includes('"v"'));
 });
+

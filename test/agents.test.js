@@ -147,3 +147,17 @@ test('真跑 PowerShell:什么都没填时 claude 不带参数', { skip: process
   assert.equal(ps.status, 0, ps.stderr);
   assert.deepEqual(JSON.parse(fs.readFileSync(out, 'utf8')), []);
 });
+
+// 2026-11-17 自查(审查第 6 条):保存时界面把整份清单(含运行记录)写回,
+// 主进程在这期间新记的运行就被界面手里那份旧的盖掉了。现在运行记录只认磁盘上的。
+test('save:运行记录以磁盘为准,界面传来的旧记录 / 伪造记录不算', async () => {
+  const d = tmp(), f = path.join(d, 'agents.json');
+  await ag.save(f, [{ id: 'a1', name: '审查' }]);
+  const stale = (await ag.load(f)).list;                      // 界面拿到的那份(还没运行过)
+  await ag.recordRun(f, 'a1', 'D:\p1', 100);                  // 期间主进程记了一次运行
+  stale[0].name = '改了名';
+  stale.push({ id: 'a2', name: '新的', runs: [{ at: 1, proj: '伪造' }] });
+  const r = await ag.save(f, stale);
+  assert.deepEqual(r.list.map(a => [a.id, a.name, a.runs]), [['a1', '改了名', [{ at: 100, proj: 'D:\p1' }]], ['a2', '新的', []]]);
+  assert.deepEqual((await ag.load(f)).list.map(a => a.runs.length), [1, 0]);
+});

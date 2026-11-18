@@ -476,6 +476,8 @@ ipcMain.handle('ckpt:rewind', async (e, slug, sid, id) => {
       try { await fs.promises.rm(backupDir, { recursive: true, force: true }); } catch {}
       return { ok: false, msg: r.msg || '回退没有成功' };
     }
+    // 记下回退后的样子:撤销时认得出「回退之后又被改过」的文件,不去覆盖/删除它们。记不成就按老办法撤销(拿不准就放行)
+    try { await ckpt.recordAfterRewind(P.REWIND_BACKUPS, bid); } catch {}
     if (r.state === 'unsure') return { ok: false, unsure: true, bid, backupDir, msg: r.msg || '没能确认回退结果' };
     return { ok: true, bid, msg: r.msg, backupDir };
   } catch (err) { return { ok: false, msg: String(err && err.message || err) }; }
