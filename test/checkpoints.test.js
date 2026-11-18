@@ -181,3 +181,17 @@ test('撤销回退:回退之后又被改过 / 新建的文件不碰,其余照常
   assert.deepEqual(r.skipped.map(p => path.basename(p)).sort(), ['a.txt', 'b.txt']);
 });
 
+test('解析结果有缓存,会话记录变了就重新解析', async () => {
+  const f = fixture();
+  const P2 = path.join(f.home, 'projects');
+  const jf = path.join(P2, f.slug, SID + '.jsonl');
+  assert.equal(await ck.sessionCwd(P2, f.home, f.slug, SID), f.proj);
+  const a = await ck.list(P2, f.home, f.slug, SID);
+  // 会话还在写:追加一条新提问,大小变了 → 列表里要有它
+  const Q3 = '9e0e0000-0000-4000-8000-000000000003';
+  fs.appendFileSync(jf, JSON.stringify({ type: 'file-history-snapshot', messageId: Q3, snapshot: { trackedFileBackups: {}, timestamp: new Date().toISOString() } }) + '\n'
+    + JSON.stringify({ type: 'user', uuid: Q3, message: { role: 'user', content: '第三问' } }) + '\n');
+  const b = await ck.list(P2, f.home, f.slug, SID);
+  assert.equal(b.items.length, a.items.length + 1);
+  assert.equal(b.items[0].prompt, '第三问');
+});

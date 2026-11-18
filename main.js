@@ -273,6 +273,8 @@ if (process.argv.includes('--pty-test')) {
     createWindow();
     writePresence();
     auth.restore().then(pushAuth, () => {});   // 有登录令牌就悄悄续期;不等它,连不上也不影响启动
+    // 清掉上次没删成的 MCP 参数文件(里面可能有明文密钥;进程中途被杀时会留下)。异步、不等它
+    mcp.cleanRuns(P.MCP_RUNS).catch(() => {});
     // 启动仅限本机的小九/自动化控制 API；失败不影响桌面总控正常使用。
     startAgentControl().catch(error => { agentState.error = String(error && error.message ? error.message : error); });
     // 盯完成流:有新完成 -> 推给界面 + 任务栏闪烁 + 刷新用量
@@ -394,7 +396,6 @@ ipcMain.handle('hub:openDoc', () => { try { shell.openPath(path.join(__dirname, 
 ipcMain.handle('hub:readCmd', (e, scope, name, projPath) => data.readCommand(scope, name, projPath));
 ipcMain.handle('hub:writeCmd', (e, scope, name, c, projPath) => data.writeCommand(scope, name, c, projPath));
 ipcMain.handle('hub:delCmd', (e, scope, name, projPath) => data.deleteCommand(scope, name, projPath));
-ipcMain.handle('hub:mcpList', (e, p) => { try { return data.listMcp(p); } catch { return []; } });
 ipcMain.handle('hub:getPrompts', () => data.getPrompts());
 ipcMain.handle('hub:savePrompts', (e, l) => data.savePrompts(l));
 // 自定义 Agent(和上面 agent:* 的小九 API 是两回事)。数据只在 APP_DATA,不碰 ~/.claude。
@@ -465,7 +466,7 @@ ipcMain.handle('ckpt:diff', async (e, slug, sid, id, key) => {
 ipcMain.handle('ckpt:rewind', async (e, slug, sid, id) => {
   let bid = '';
   try {
-    const { cwd } = await ckpt.list(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid);
+    const cwd = await ckpt.sessionCwd(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid);
     bid = await ckpt.backupBeforeRewind(P.CLAUDE_PROJECTS, P.CLAUDE_HOME, slug, sid, id, P.REWIND_BACKUPS);
     const { env } = await termEnv();
     const r = await ckpt.runRewind(sid, id, cwd, claudeCli.withClaudeOnPath(env));

@@ -64,7 +64,6 @@ contextBridge.exposeInMainWorld('hub', {
   readCmd: (sc, n, p) => ipcRenderer.invoke('hub:readCmd', sc, n, p),
   writeCmd: (sc, n, c, p) => ipcRenderer.invoke('hub:writeCmd', sc, n, c, p),
   delCmd: (sc, n, p) => ipcRenderer.invoke('hub:delCmd', sc, n, p),
-  mcpList: (p) => ipcRenderer.invoke('hub:mcpList', p),
   getPrompts: () => ipcRenderer.invoke('hub:getPrompts'),
   savePrompts: (l) => ipcRenderer.invoke('hub:savePrompts', l),
   agentsList: () => ipcRenderer.invoke('agents:list'),

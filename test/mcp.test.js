@@ -127,3 +127,15 @@ test('readDesktop:没装 Claude Desktop 就是空;值留在主进程,摘要不�
   assert.ok(!JSON.stringify(r.servers[0].sum).includes('"v"'));
 });
 
+// 2026-11-17 自查:add-json 的参数文件里有明文密钥,正常用完就删;进程中途被杀会留下。启动时清老的。
+test('cleanRuns:只删超过时限的参数文件,别的文件和新文件不动', async () => {
+  const d = tmp();
+  const now = Date.now();
+  for (const [n, ageMin] of [['mcp-1-2.json', 30], ['mcp-3-4.json', 1], ['notes.txt', 30]]) {
+    const p = path.join(d, n); fs.writeFileSync(p, '{}');
+    const t = new Date(now - ageMin * 60e3); fs.utimesSync(p, t, t);
+  }
+  assert.equal(await m.cleanRuns(d, 10 * 60e3, now), 1);
+  assert.deepEqual(fs.readdirSync(d).sort(), ['mcp-3-4.json', 'notes.txt']);
+  assert.equal(await m.cleanRuns(path.join(d, '没有这个目录')), 0);
+});
